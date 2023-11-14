@@ -1,10 +1,20 @@
+use std::{path::PathBuf, str::FromStr};
+
 use axum::{extract::WebSocketUpgrade, response::Html, routing::get, Router};
 use dioxus::prelude::*;
+use once_cell::sync::OnceCell;
+use tracing::info;
 
-use crate::JobSender;
+use crate::{
+    job::{JobCommand, QueueKind, ScanQueueItem},
+    JobSender,
+};
+
+static JOB_SENDER: OnceCell<JobSender> = OnceCell::new();
 
 pub async fn start_server(job_sender: JobSender) {
     let addr: std::net::SocketAddr = ([127, 0, 0, 1], 3070).into();
+    JOB_SENDER.set(job_sender).unwrap();
 
     let view = dioxus_liveview::LiveViewPool::new();
 
@@ -44,9 +54,29 @@ pub async fn start_server(job_sender: JobSender) {
 }
 
 fn App(cx: Scope) -> Element {
+    let file_input = use_state(cx, || "".to_string());
+
     cx.render(rsx! {
-        div {
-            "Hello world!"
-        }
+        input {
+            r#type: "text",
+            placeholder: "Enter file path",
+            value: "{file_input}",
+            oninput: move |e| {
+                file_input.set(e.data.value.clone());
+            },
+        },
+        button {
+            onclick: move |_| {
+                let Ok(path) = PathBuf::from_str(file_input) else {
+                    info!("Invalid path");
+                    return;
+                };
+                JOB_SENDER.get().unwrap().send(JobCommand::Enqueue(QueueKind::Scan(ScanQueueItem {
+                    path,
+                    retry_count: 0,
+                }))).unwrap();
+            },
+            "Scan file",
+        },
     })
 }

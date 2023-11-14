@@ -42,13 +42,13 @@ impl Default for Config {
 ///
 /// According to this setting, a score is calculated for each field for each release, and the release with the highest total score is selected.
 ///
-/// The `preferred` can be an array, with the first one getting a higher score when matched. Specifically, the first is 1, the next is 0.5, and so on, with a 50/50 split.
+/// The `preferred` can be an array. If the field matches any of the elements in the array, the score is added.
 /// The `weight` specifies the weight of the field.
 /// The score of `preferred` multiplied by the `weight` is the score of the field.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReleaseSelector {
+    /// ref: https://musicbrainz.org/doc/Release_Group/Type
     pub release_group_type: ReleaseSelectorItem,
-    pub release_type: ReleaseSelectorItem,
     pub country: ReleaseSelectorItem,
 }
 
@@ -56,10 +56,6 @@ impl Default for ReleaseSelector {
     fn default() -> Self {
         Self {
             release_group_type: ReleaseSelectorItem {
-                preferred: vec!["album".to_string()],
-                weight: 1.0,
-            },
-            release_type: ReleaseSelectorItem {
                 preferred: vec!["album".to_string()],
                 weight: 1.0,
             },
@@ -71,7 +67,7 @@ impl Default for ReleaseSelector {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReleaseSelectorItem {
     pub preferred: Vec<String>,
     pub weight: f64,
