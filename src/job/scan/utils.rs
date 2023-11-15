@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::Context;
+use lofty::{Accessor, Tag};
 use serde::Deserialize;
 use tracing::info;
 
@@ -26,6 +27,7 @@ pub(super) async fn calc_fingerprint(path: &Path) -> anyhow::Result<FpcalcResult
 
 pub(super) fn calc_release_score(
     release: &RecordingResRelease,
+    current_tag: Option<&Tag>,
     release_selector: &ReleaseSelector,
 ) -> f64 {
     let mut score = 0.0;
@@ -48,10 +50,12 @@ pub(super) fn calc_release_score(
         score += release_selector.release_group_type.weight * (1.0 / (idx as f64 + 1.0))
     }
 
-    info!(
-        "Score of '{}({})': {}",
-        release.release_group.title, release.id, score
-    );
+    let title_distance_score = if let Some(Some(album)) = current_tag.map(|t| t.album()) {
+        strsim::normalized_levenshtein(&album, &release.release_group.title)
+    } else {
+        0.0
+    };
+    score += release_selector.release_title_distance.weight * title_distance_score;
 
     score
 }

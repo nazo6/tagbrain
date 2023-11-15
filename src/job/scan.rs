@@ -1,6 +1,7 @@
 use std::path::Path;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
+use lofty::{read_from_path, TaggedFileExt};
 use tracing::{info, warn};
 
 use crate::{
@@ -46,22 +47,35 @@ pub(super) async fn scan_and_move(path: &Path) -> anyhow::Result<()> {
         ));
     }
 
+    let tagged_file = read_from_path(path).ok();
+    let tag = tagged_file.as_ref().and_then(|f| f.primary_tag());
+
     let release_selector = &CONFIG.read().release_selector.clone();
     let mb_client = MusicbrainzClient::new();
     let tasks = best_match.recordings.iter().map(|id| async {
         let res = mb_client.recording(&id.id).await;
         if let Ok(recording) = res {
-            let best_release = recording.releases.into_iter().max_by(|a, b| {
-                let score_a = calc_release_score(a, release_selector);
-                let score_b = calc_release_score(b, release_selector);
-                score_a.partial_cmp(&score_b).unwrap()
-            });
+            let (best_release, best_score) =
+                recording
+                    .releases
+                    .into_iter()
+                    .fold((None, 0.0), |(best, best_score), release| {
+                        let score = calc_release_score(&release, tag, release_selector);
+                        if score > best_score {
+                            (Some(release), score)
+                        } else {
+                            (best, best_score)
+                        }
+                    });
             match best_release {
-                Some(best_release) => Some(RecordingMetadata {
-                    title: recording.title,
-                    id: recording.id,
-                    release: best_release,
-                }),
+                Some(best_release) => Some((
+                    RecordingMetadata {
+                        title: recording.title,
+                        id: recording.id,
+                        release: best_release,
+                    },
+                    best_score,
+                )),
                 None => {
                     warn!(
                         "No release found for recording: {} ({})",
@@ -75,18 +89,22 @@ pub(super) async fn scan_and_move(path: &Path) -> anyhow::Result<()> {
         }
     });
     let best_release_per_recording = futures::future::join_all(tasks).await;
-    let best = best_release_per_recording
-        .into_iter()
-        .flatten()
-        .max_by(|a, b| {
-            calc_release_score(&a.release, release_selector)
-                .partial_cmp(&calc_release_score(&b.release, release_selector))
-                .unwrap()
-        })
-        .context("No best release/recording found.")?;
+    let (best, best_score) = best_release_per_recording.into_iter().flatten().fold(
+        (None, 0.0),
+        |(best, best_score), (crr_data, crr_score)| {
+            if crr_score > best_score {
+                (Some(crr_data), crr_score)
+            } else {
+                (best, crr_score)
+            }
+        },
+    );
+    let Some(best) = best else {
+        return Err(anyhow!("No best match found."));
+    };
     info!(
-        "Best match release/recording was '{}({})' / '{}({})'",
-        best.release.release_group.title, best.release.id, best.title, best.id
+        "Best match release/recording was '{}({})' / '{}({})' with score {}",
+        best.release.release_group.title, best.release.id, best.title, best.id, best_score
     );
 
     Ok(())

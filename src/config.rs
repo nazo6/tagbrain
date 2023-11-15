@@ -48,28 +48,37 @@ impl Default for Config {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReleaseSelector {
     /// ref: https://musicbrainz.org/doc/Release_Group/Type
-    pub release_group_type: ReleaseSelectorItem,
-    pub country: ReleaseSelectorItem,
+    pub release_group_type: MatchReleaseSelector,
+    pub country: MatchReleaseSelector,
+    /// Read metadata from current file and calculate levenshtein distance.
+    pub release_title_distance: DistanceReleaseSelector,
 }
 
 impl Default for ReleaseSelector {
     fn default() -> Self {
         Self {
-            release_group_type: ReleaseSelectorItem {
-                preferred: vec!["album".to_string()],
+            release_group_type: MatchReleaseSelector {
+                /// ex: ["Album", "EP", "Single"]
+                preferred: vec![],
                 weight: 1.0,
             },
-            country: ReleaseSelectorItem {
-                preferred: vec!["US".to_string(), "GB".to_string()],
+            country: MatchReleaseSelector {
+                /// ex: ["US", "JP", "XW"]
+                preferred: vec![],
                 weight: 1.0,
             },
+            release_title_distance: DistanceReleaseSelector { weight: 1.0 },
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ReleaseSelectorItem {
+pub struct MatchReleaseSelector {
     pub preferred: Vec<String>,
+    pub weight: f64,
+}
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DistanceReleaseSelector {
     pub weight: f64,
 }
 
