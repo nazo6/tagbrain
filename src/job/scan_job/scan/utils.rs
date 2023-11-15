@@ -1,19 +1,10 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::path::Path;
 
 use anyhow::Context;
 use lofty::{Accessor, Tag};
 use serde::Deserialize;
-use tokio::io::AsyncWriteExt;
 
-use crate::{
-    api::musicbrainz::recording::RecordingResRelease,
-    config::{ReleaseSelector, CONFIG},
-};
-
-use super::metadata::Metadata;
+use crate::{api::musicbrainz::recording::RecordingResRelease, config::ReleaseSelector};
 
 #[derive(Deserialize, Debug)]
 pub(super) struct FpcalcResult {
@@ -73,75 +64,4 @@ pub(super) fn calc_release_score(
     score += release_selector.release_title_distance.weight * title_distance_score;
 
     score
-}
-
-macro_rules! write_property {
-    ($title:literal, $old:ident, $new:ident, $prop:ident, $text:ident) => {
-        $text.push_str(&format!(
-            "{}\t: {} → {}\n",
-            $title,
-            $old.$prop.as_ref().unwrap_or(&"NULL".to_string()),
-            $new.$prop.as_ref().unwrap_or(&"NULL".to_string())
-        ));
-    };
-}
-macro_rules! write_property_num {
-    ($title:literal, $old:ident, $new:ident, $prop:ident, $text:ident) => {
-        $text.push_str(&format!(
-            "{}:\t {} → {}\n",
-            $title,
-            $old.$prop
-                .as_ref()
-                .map(|p| p.to_string())
-                .unwrap_or("NULL".to_string()),
-            $new.$prop
-                .as_ref()
-                .map(|p| p.to_string())
-                .unwrap_or("NULL".to_string())
-        ));
-    };
-}
-
-pub(super) async fn log_diff(
-    old_path: &Path,
-    old: &Metadata,
-    new: &Metadata,
-) -> anyhow::Result<()> {
-    let mut log_path = PathBuf::from_str(&CONFIG.read().log_dir)?;
-    log_path.push(old_path.file_name().context("No file name")?);
-
-    let mut text = "----------------\n".to_string();
-    write_property!("Title", old, new, title, text);
-    write_property!("Artist", old, new, artist, text);
-    write_property!("Artist Sort", old, new, artist_sort, text);
-    write_property!("Album", old, new, album, text);
-    write_property!("Album Artist", old, new, album_artist, text);
-    write_property!("Album Artist Sort", old, new, album_artist_sort, text);
-    write_property_num!("Track", old, new, track, text);
-    write_property_num!("Total Tracks", old, new, total_tracks, text);
-    write_property_num!("Disk", old, new, disk, text);
-    write_property_num!("Total Disks", old, new, total_disks, text);
-    write_property!("Date", old, new, date, text);
-    write_property!("Year", old, new, year, text);
-    write_property!("Label", old, new, label, text);
-    write_property!("Media", old, new, media, text);
-    write_property!("Musicbrainz Track ID", old, new, musicbrainz_track_id, text);
-    write_property!("Musicbrainz Album ID", old, new, musicbrainz_album_id, text);
-    write_property!(
-        "Musicbrainz Artist ID",
-        old,
-        new,
-        musicbrainz_artist_id,
-        text
-    );
-    text.push_str("----------------\n\n");
-
-    let mut log_file = tokio::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(log_path)
-        .await?;
-    log_file.write_all(text.as_bytes()).await?;
-
-    Ok(())
 }

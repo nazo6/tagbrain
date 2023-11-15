@@ -14,13 +14,13 @@ use crate::{
         },
     },
     config::CONFIG,
+    interface::metadata::write_metadata,
 };
 
-use self::metadata::Metadata;
-use metadata::write_metadata;
 use utils::{calc_fingerprint, calc_release_score};
 
-mod metadata;
+use crate::interface::metadata::Metadata;
+
 mod utils;
 
 #[tracing::instrument()]
@@ -145,14 +145,15 @@ fn format_to_metadata(
     Ok(metadata)
 }
 
-pub struct ScanResult {
+pub struct ScanSuccessLog {
     pub old_metadata: Metadata,
     pub new_metadata: Metadata,
     pub acoustid_score: f64,
+    pub target_path: PathBuf,
 }
 
 #[tracing::instrument(err)]
-pub(super) async fn scan_and_copy(path: &Path) -> anyhow::Result<ScanResult> {
+pub(super) async fn scan_and_copy(path: &Path) -> anyhow::Result<ScanSuccessLog> {
     info!("Scanning file: {}", path.display());
     let calculated = calc_fingerprint(path).await?;
     let acoustid_match = acoustid_find(&calculated.fingerprint, calculated.duration)
@@ -237,9 +238,10 @@ pub(super) async fn scan_and_copy(path: &Path) -> anyhow::Result<ScanResult> {
         Metadata::default()
     };
 
-    Ok(ScanResult {
+    Ok(ScanSuccessLog {
         old_metadata,
         new_metadata: metadata,
         acoustid_score: acoustid_match.score,
+        target_path: new_path,
     })
 }

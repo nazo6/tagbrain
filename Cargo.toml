@@ -28,3 +28,4 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.17"
 url = "2.4.1"
 walkdir = "2.4.0"
+sqlx = { version = "0.7", features = ["runtime-tokio", "tls-rustls", "sqlite"] }
