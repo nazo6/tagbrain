@@ -46,7 +46,7 @@ pub async fn start_server(job_sender: JobSender) {
             }),
         );
 
-    println!("Listening on http://{addr}");
+    info!("Listening on http://{addr}");
 
     axum::Server::bind(&addr.to_string().parse().unwrap())
         .serve(app.into_make_service())

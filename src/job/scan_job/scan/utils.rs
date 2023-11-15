@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::Context;
+use eyre::Context;
 use lofty::{Accessor, Tag};
 use serde::Deserialize;
 
@@ -11,13 +11,13 @@ pub(super) struct FpcalcResult {
     pub duration: f64,
     pub fingerprint: String,
 }
-pub(super) async fn calc_fingerprint(path: &Path) -> anyhow::Result<FpcalcResult> {
+pub(super) async fn calc_fingerprint(path: &Path) -> eyre::Result<FpcalcResult> {
     let output = tokio::process::Command::new("fpcalc")
         .arg(path)
         .arg("-json")
         .output()
         .await
-        .context("Failed to run fpcalc")?;
+        .wrap_err("Failed to run fpcalc")?;
     let str = String::from_utf8(output.stdout)?;
     let json: FpcalcResult = serde_json::from_str(&str)?;
 

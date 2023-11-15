@@ -1,3 +1,5 @@
+use tracing::warn;
+
 use super::{ArtistCredit, MusicbrainzClient};
 
 #[derive(serde::Deserialize, Debug)]
@@ -6,7 +8,7 @@ pub struct RecordingRes {
     pub title: String,
     pub id: String,
     pub releases: Vec<RecordingResRelease>,
-    pub artist_credit: Vec<ArtistCredit>,
+    pub artist_credit: Option<Vec<ArtistCredit>>,
     pub first_release_date: String,
 }
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -26,8 +28,8 @@ pub struct RecordingResReleaseGroup {
 }
 
 impl MusicbrainzClient {
-    #[tracing::instrument(skip(self), err)]
-    pub async fn recording(&self, id: &str) -> Result<RecordingRes, anyhow::Error> {
+    #[tracing::instrument(skip(self))]
+    pub async fn recording(&self, id: &str) -> Result<RecordingRes, eyre::Report> {
         let url = format!("https://musicbrainz.org/ws/2/recording/{}", id);
         let url = url::Url::parse_with_params(
             &url,
@@ -35,7 +37,11 @@ impl MusicbrainzClient {
         )?;
         // let res: RecordingRes = self.client.get(url).send().await?.json().await?;
         let text = self.client.get(url).send().await?.text().await?;
-        let res: RecordingRes = serde_json::from_str(&text)?;
-        Ok(res)
+        let debug_res: serde_json::Value = serde_json::from_str(&text)?;
+        let res = serde_json::from_str::<RecordingRes>(&text);
+        if let Err(e) = &res {
+            warn!("recording dbg {}: {:?}", id, debug_res);
+        }
+        Ok(res?)
     }
 }

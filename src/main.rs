@@ -4,6 +4,7 @@ use job::JobCommand;
 use once_cell::sync::Lazy;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tracing_error::ErrorLayer;
 
 mod api;
 #[allow(non_snake_case)]
@@ -26,14 +27,27 @@ static POOL: Lazy<SqlitePool> = Lazy::new(|| {
     })
 });
 
-fn main() -> anyhow::Result<()> {
-    dotenvy::dotenv().expect(".env file not found");
+fn install_tracing() {
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::{fmt, EnvFilter};
 
-    tracing_subscriber::fmt()
-        .compact()
-        .with_file(true)
-        .with_line_number(true)
+    let fmt_layer = fmt::layer().with_target(false).pretty();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(ErrorLayer::default())
         .init();
+}
+
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
+    install_tracing();
+
+    dotenvy::dotenv().expect(".env file not found");
 
     {
         let _c = &*config::CONFIG;
@@ -55,7 +69,7 @@ fn main() -> anyhow::Result<()> {
                 job::start_job(job_receiver)
             );
 
-            Ok::<_, anyhow::Error>(())
+            Ok::<_, eyre::Report>(())
         })?;
 
     Ok(())

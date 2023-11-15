@@ -22,7 +22,6 @@ pub async fn scan_job(
         if CONFIG.read().allowed_extensions.iter().any(|e| e == ext) {
             let _permit = semaphore.acquire_owned().await.unwrap();
             let res = scan_and_copy(path).await;
-            tokio::time::sleep(Duration::from_secs(1)).await;
             match res {
                 Ok(res) => {
                     info!("Finished scanning: {}", path.display());
@@ -55,7 +54,7 @@ pub async fn scan_job(
                         });
                     } else {
                         error!("Failed to scan: {:?}", err);
-                        let err = err.to_string();
+                        let err = format!("{}", err);
                         let path = path.to_string_lossy();
                         query!(
                             "INSERT INTO log (success, message, source_path, retry_count) VALUES (?,?,?,?)",
@@ -70,7 +69,6 @@ pub async fn scan_job(
                     }
                 }
             }
-            tokio::time::sleep(Duration::from_secs(1)).await;
             return;
         }
     }

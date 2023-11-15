@@ -72,7 +72,7 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
         });
     }
 
-    let semaphore = Arc::new(tokio::sync::Semaphore::new(3));
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
 
     while (receiver.recv().await).is_some() {
         let queue = queue.clone();

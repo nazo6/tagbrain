@@ -4,7 +4,7 @@ use super::{ArtistCredit, MusicbrainzClient};
 #[serde(rename_all = "kebab-case")]
 pub struct ReleaseRes {
     pub label_info: Option<Vec<ReleaseResLabelInfo>>,
-    pub artist_credit: Vec<ArtistCredit>,
+    pub artist_credit: Option<Vec<ArtistCredit>>,
     pub media: Vec<ReleaseResMedia>,
     pub title: String,
 }
@@ -12,7 +12,7 @@ pub struct ReleaseRes {
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReleaseResLabelInfo {
-    pub catalog_number: String,
+    // pub catalog_number: String,
     pub label: Option<ReleaseResLabelInfoLabel>,
 }
 #[derive(serde::Deserialize, Debug)]
@@ -47,8 +47,8 @@ pub struct ReleaseResMediaTrackRecording {
 }
 
 impl MusicbrainzClient {
-    #[tracing::instrument(skip(self), err)]
-    pub async fn release(&self, id: &str) -> Result<ReleaseRes, anyhow::Error> {
+    #[tracing::instrument(skip(self))]
+    pub async fn release(&self, id: &str) -> Result<ReleaseRes, eyre::Error> {
         let url = format!("https://musicbrainz.org/ws/2/release/{}", id);
         let url = url::Url::parse_with_params(
             &url,
