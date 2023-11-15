@@ -4,32 +4,28 @@ use std::{
 };
 
 use tokio::sync::mpsc;
-use tracing::debug;
 
 use crate::JobReceiver;
 
-use self::scan::scan_and_move;
-
-mod scan;
+mod scan_job;
 
 #[derive(Debug)]
 pub enum JobCommand {
-    Enqueue(QueueKind),
+    Enqueue(QueueItem),
     Clear,
 }
 #[derive(Debug)]
-pub enum QueueKind {
-    Scan(ScanQueueItem),
-    Message(String),
+pub struct QueueItem {
+    pub kind: QueueKind,
+    pub retry_count: u8,
 }
 #[derive(Debug)]
-pub struct ScanQueueItem {
-    pub path: PathBuf,
-    pub retry_count: u8,
+pub enum QueueKind {
+    Scan { path: PathBuf },
 }
 
 pub struct Queue {
-    pub queue: Mutex<Vec<QueueKind>>,
+    pub queue: Mutex<Vec<QueueItem>>,
     pub channel: mpsc::UnboundedSender<()>,
 }
 impl Queue {
@@ -43,11 +39,11 @@ impl Queue {
             channel.1,
         )
     }
-    pub fn enqueue(&self, item: QueueKind) {
+    pub fn enqueue(&self, item: QueueItem) {
         self.queue.lock().unwrap().push(item);
         self.channel.send(()).unwrap();
     }
-    pub fn dequeue(&self) -> Option<QueueKind> {
+    pub fn dequeue(&self) -> Option<QueueItem> {
         self.queue.lock().unwrap().pop()
     }
     pub fn clear(&self) {
@@ -55,6 +51,7 @@ impl Queue {
     }
 }
 
+#[tracing::instrument(skip(job_receiver))]
 pub async fn start_job(mut job_receiver: JobReceiver) {
     let (queue, mut receiver) = Queue::new();
     let queue = Arc::new(queue);
@@ -75,21 +72,17 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
         });
     }
 
-    let semaphore = Arc::new(tokio::sync::Semaphore::new(10));
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(3));
 
     while (receiver.recv().await).is_some() {
-        let permit = semaphore.clone().acquire_owned().await.unwrap();
         let queue = queue.clone();
+        let semaphore = semaphore.clone();
         tokio::spawn(async move {
-            let _permit = permit;
             while let Some(item) = queue.dequeue() {
-                match item {
-                    QueueKind::Scan(item) => {
-                        let res = scan_and_move(&item.path).await;
-                        debug!("{:?}", &res);
-                    }
-                    QueueKind::Message(msg) => {
-                        println!("Message: {:?}", msg);
+                let semaphore = semaphore.clone();
+                match item.kind {
+                    QueueKind::Scan { path } => {
+                        scan_job::scan_job(&path, semaphore, queue.clone(), item.retry_count).await;
                     }
                 }
             }

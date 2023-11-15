@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use lofty::{read_from_path, Tag, TaggedFileExt};
@@ -14,38 +14,20 @@ use crate::{
         },
     },
     config::CONFIG,
-    job::scan::utils::{calc_fingerprint, calc_release_score},
 };
 
+use self::metadata::Metadata;
+use metadata::write_metadata;
+use utils::{calc_fingerprint, calc_release_score};
+
+mod metadata;
 mod utils;
 
-#[derive(Debug)]
-pub struct Metadata {
-    pub title: String,
-    pub artist: String,
-    pub artist_sort: Option<String>,
-    pub album: String,
-    pub album_artist: String,
-    pub album_artist_sort: Option<String>,
-    pub track: i64,
-    pub total_tracks: Option<i64>,
-    pub disc: i64,
-    pub total_discs: Option<i64>,
-    pub date: Option<String>,
-    pub year: Option<String>,
-    pub label: Option<String>,
-    pub media: Option<String>,
-    pub musicbrainz_track_id: Option<String>,
-    pub musicbrainz_album_id: Option<String>,
-    pub musicbrainz_artist_id: Option<String>,
-    pub musicbrainz_album_artist_id: Option<String>,
-    pub musicbrainz_release_group_id: Option<String>,
-}
-
+#[tracing::instrument()]
 async fn acoustid_find(fingerprint: &str, duration: f64) -> Result<Option<LookupResEntry>> {
     let acoustid_client = AcoustidClient::new();
     let acoustid_res = acoustid_client
-        .lookup(fingerprint, duration.round() as i64)
+        .lookup(fingerprint, duration.round() as u32)
         .await?;
     let Some(best) = acoustid_res
         .results
@@ -73,7 +55,7 @@ fn find_best_release_and_recording(
                 recording
                     .releases
                     .iter()
-                    .fold((None, 0.0), |(best, best_score), release| {
+                    .fold((None, -1.0), |(best, best_score), release| {
                         let score = calc_release_score(release, crr_tag, release_selector);
                         if score > best_score {
                             (Some(release), score)
@@ -125,34 +107,35 @@ fn format_to_metadata(
         .expect("recording id not found. this must be unreachable!");
 
     let metadata = Metadata {
-        title: recording.title,
-        artist: recording.artist_credit.to_string(),
+        title: Some(recording.title),
+        artist: Some(recording.artist_credit.to_string()),
         artist_sort: Some(recording.artist_credit.to_sort_string()),
-        album: release_additional.title,
-        album_artist: release_additional.artist_credit.to_string(),
+        album: Some(release_additional.title),
+        album_artist: Some(release_additional.artist_credit.to_string()),
         album_artist_sort: Some(release_additional.artist_credit.to_sort_string()),
-        track: this_track.position,
-        total_tracks: Some(this_media.track_count),
-        disc: this_media.position,
-        total_discs: Some(release_additional.media.len() as i64),
+        track: Some(this_track.position.to_string()),
+        total_tracks: Some(this_media.track_count.to_string()),
+        disk: Some(this_media.position.to_string()),
+        total_disks: Some(release_additional.media.len().to_string()),
         year: recording
             .first_release_date
             .split('-')
             .next()
             .map(|s| s.to_owned()),
         date: Some(recording.first_release_date),
-        label: release_additional
-            .label_info
-            .first()
-            .map(|li| li.label.name.clone()),
-        media: Some(release.release_group.primary_type),
+        label: release_additional.label_info.and_then(|label| {
+            label
+                .first()
+                .and_then(|li| li.label.as_ref().map(|label| label.id.clone()))
+        }),
+        media: release.release_group.primary_type,
         musicbrainz_track_id: Some(this_track.id.clone()),
         musicbrainz_album_id: Some(release.id),
         musicbrainz_artist_id: recording
             .artist_credit
             .first()
             .map(|ac| ac.artist.id.clone()),
-        musicbrainz_album_artist_id: release_additional
+        musicbrainz_release_artist_id: release_additional
             .artist_credit
             .first()
             .map(|ac| ac.artist.id.clone()),
@@ -162,8 +145,14 @@ fn format_to_metadata(
     Ok(metadata)
 }
 
+pub struct ScanResult {
+    pub old_metadata: Metadata,
+    pub new_metadata: Metadata,
+    pub acoustid_score: f64,
+}
+
 #[tracing::instrument(err)]
-pub(super) async fn scan_and_move(path: &Path) -> anyhow::Result<()> {
+pub(super) async fn scan_and_copy(path: &Path) -> anyhow::Result<ScanResult> {
     info!("Scanning file: {}", path.display());
     let calculated = calc_fingerprint(path).await?;
     let acoustid_match = acoustid_find(&calculated.fingerprint, calculated.duration)
@@ -180,16 +169,23 @@ pub(super) async fn scan_and_move(path: &Path) -> anyhow::Result<()> {
     let mb_client = MusicbrainzClient::new();
 
     let (best_recording, best_release, best_score) = {
-        let recordings = futures::future::join_all(
-            acoustid_match
-                .recordings
-                .iter()
-                .map(|id| async { mb_client.recording(&id.id).await }),
-        )
-        .await
-        .into_iter()
-        .filter_map(|res| res.ok())
-        .collect::<Vec<_>>();
+        let recordings =
+            futures::future::join_all(acoustid_match.recordings.iter().flatten().map(|id| async {
+                let res = mb_client.recording(&id.id).await;
+                if let Err(e) = &res {
+                    warn!("Failed to get recording {}: {}", id.id, e);
+                }
+                res
+            }))
+            .await
+            .into_iter()
+            .filter_map(|res| res.ok())
+            .collect::<Vec<_>>();
+
+        if recordings.is_empty() {
+            return Err(anyhow::anyhow!("No recordings found!"));
+        }
+
         find_best_release_and_recording(recordings, tag).context("Failed to find best match")?
     };
 
@@ -205,7 +201,45 @@ pub(super) async fn scan_and_move(path: &Path) -> anyhow::Result<()> {
     let release_additional_data = mb_client.release(&best_release.id).await?;
     let metadata = format_to_metadata(best_recording, best_release, release_additional_data)?;
 
-    dbg!(&metadata);
+    let Some(Some(ext)) = path.extension().map(|ext| ext.to_str()) else {
+        return Err(anyhow::anyhow!("No extension found!"));
+    };
+    let mut new_path = PathBuf::new();
+    new_path.push(CONFIG.read().target_dir.clone());
+    new_path.push(
+        metadata
+            .album_artist
+            .clone()
+            .expect("album artist not found"),
+    );
+    new_path.push(metadata.album.clone().expect("album not found"));
+    new_path.push(format!(
+        "{} - {}.{}",
+        metadata.track.as_ref().expect("track not found"),
+        metadata.title.as_ref().expect("title not found"),
+        ext
+    ));
 
-    Ok(())
+    tokio::fs::create_dir_all(new_path.parent().unwrap()).await?;
+    tokio::fs::copy(path, &new_path).await?;
+
+    let mut tagged_file_new = read_from_path(&new_path)
+        .ok()
+        .context("Failed to open new file")?;
+    let tag_new = tagged_file_new
+        .primary_tag_mut()
+        .context("Failed to open new file")?;
+    write_metadata(tag_new, metadata.clone());
+
+    let old_metadata = if let Some(tag) = tag {
+        Metadata::from_tag(tag)
+    } else {
+        Metadata::default()
+    };
+
+    Ok(ScanResult {
+        old_metadata,
+        new_metadata: metadata,
+        acoustid_score: acoustid_match.score,
+    })
 }

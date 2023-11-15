@@ -6,7 +6,8 @@ use once_cell::sync::OnceCell;
 use tracing::info;
 
 use crate::{
-    job::{JobCommand, QueueKind, ScanQueueItem},
+    config::CONFIG,
+    job::{JobCommand, QueueItem, QueueKind},
     JobSender,
 };
 
@@ -56,6 +57,25 @@ pub async fn start_server(job_sender: JobSender) {
 fn App(cx: Scope) -> Element {
     let file_input = use_state(cx, || "".to_string());
 
+    let scan_all = |_| {
+        let source_dir = CONFIG.read().source_dir.clone();
+        for item in walkdir::WalkDir::new(source_dir).into_iter().flatten() {
+            if item.file_type().is_file() {
+                info!("Enqueueing: {}", item.path().to_string_lossy());
+                JOB_SENDER
+                    .get()
+                    .unwrap()
+                    .send(JobCommand::Enqueue(QueueItem {
+                        kind: QueueKind::Scan {
+                            path: item.path().to_path_buf(),
+                        },
+                        retry_count: 0,
+                    }))
+                    .unwrap();
+            }
+        }
+    };
+
     cx.render(rsx! {
         input {
             r#type: "text",
@@ -71,12 +91,19 @@ fn App(cx: Scope) -> Element {
                     info!("Invalid path");
                     return;
                 };
-                JOB_SENDER.get().unwrap().send(JobCommand::Enqueue(QueueKind::Scan(ScanQueueItem {
-                    path,
-                    retry_count: 0,
-                }))).unwrap();
+                JOB_SENDER.get().unwrap().send(JobCommand::Enqueue(QueueItem {
+                    kind: QueueKind::Scan{
+                        path,
+                    },
+                    retry_count: 0
+                })).unwrap();
             },
             "Scan file",
         },
+        br {},
+        button {
+            onclick: scan_all,
+            "Scan all file",
+        }
     })
 }

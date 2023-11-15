@@ -16,7 +16,11 @@ async fn main() {
     #[cfg(debug_assertions)]
     dotenvy::dotenv().expect(".env file not found");
 
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .compact()
+        .with_file(true)
+        .with_line_number(true)
+        .init();
 
     {
         let _c = config::CONFIG.read();

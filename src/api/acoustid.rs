@@ -11,7 +11,7 @@ pub struct LookupRes {
 #[derive(serde::Deserialize, Debug)]
 pub struct LookupResEntry {
     pub id: String,
-    pub recordings: Vec<LookupResEntryRecording>,
+    pub recordings: Option<Vec<LookupResEntryRecording>>,
     pub score: f64,
 }
 #[derive(serde::Deserialize, Debug)]
@@ -31,7 +31,7 @@ impl AcoustidClient {
     pub async fn lookup(
         &self,
         fingerprint: &str,
-        duration: i64,
+        duration: u32,
     ) -> Result<LookupRes, anyhow::Error> {
         let url = "https://api.acoustid.org/v2/lookup";
         let url = url::Url::parse_with_params(
