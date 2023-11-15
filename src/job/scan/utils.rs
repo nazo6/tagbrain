@@ -3,9 +3,8 @@ use std::path::Path;
 use anyhow::Context;
 use lofty::{Accessor, Tag};
 use serde::Deserialize;
-use tracing::info;
 
-use crate::{api::musicbrainz::RecordingResRelease, config::ReleaseSelector};
+use crate::{api::musicbrainz::recording::RecordingResRelease, config::ReleaseSelector};
 
 #[derive(Deserialize, Debug)]
 pub(super) struct FpcalcResult {
@@ -51,7 +50,12 @@ pub(super) fn calc_release_score(
     }
 
     let title_distance_score = if let Some(Some(album)) = current_tag.map(|t| t.album()) {
-        strsim::normalized_levenshtein(&album, &release.release_group.title)
+        let distance_score = strsim::normalized_levenshtein(&album, &release.release_group.title);
+        if distance_score >= release_selector.release_title_distance.threshold {
+            distance_score
+        } else {
+            0.0
+        }
     } else {
         0.0
     };

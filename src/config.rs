@@ -67,7 +67,10 @@ impl Default for ReleaseSelector {
                 preferred: vec![],
                 weight: 1.0,
             },
-            release_title_distance: DistanceReleaseSelector { weight: 1.0 },
+            release_title_distance: DistanceReleaseSelector {
+                threshold: 0.5,
+                weight: 1.0,
+            },
         }
     }
 }
@@ -79,6 +82,8 @@ pub struct MatchReleaseSelector {
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DistanceReleaseSelector {
+    /// If value is less than this, the score will be 0.
+    pub threshold: f64,
     pub weight: f64,
 }
 

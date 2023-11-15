@@ -18,8 +18,9 @@ async fn main() {
 
     tracing_subscriber::fmt::init();
 
-    let c = config::CONFIG.read();
-    drop(c);
+    {
+        let _c = config::CONFIG.read();
+    }
 
     let (job_sender, job_receiver) = tokio::sync::mpsc::unbounded_channel::<JobCommand>();
 

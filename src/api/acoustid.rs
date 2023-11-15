@@ -5,17 +5,17 @@ pub struct AcoustidClient {
 }
 
 #[derive(serde::Deserialize, Debug)]
-pub struct RookupRes {
-    pub results: Vec<RookupResEntry>,
+pub struct LookupRes {
+    pub results: Vec<LookupResEntry>,
 }
 #[derive(serde::Deserialize, Debug)]
-pub struct RookupResEntry {
+pub struct LookupResEntry {
     pub id: String,
-    pub recordings: Vec<ReookupResEntryRecording>,
+    pub recordings: Vec<LookupResEntryRecording>,
     pub score: f64,
 }
 #[derive(serde::Deserialize, Debug)]
-pub struct ReookupResEntryRecording {
+pub struct LookupResEntryRecording {
     pub id: String,
 }
 
@@ -32,7 +32,7 @@ impl AcoustidClient {
         &self,
         fingerprint: &str,
         duration: i64,
-    ) -> Result<RookupRes, anyhow::Error> {
+    ) -> Result<LookupRes, anyhow::Error> {
         let url = "https://api.acoustid.org/v2/lookup";
         let url = url::Url::parse_with_params(
             url,
@@ -43,7 +43,7 @@ impl AcoustidClient {
                 ("fingerprint", &fingerprint.to_string()),
             ],
         )?;
-        let res: RookupRes = self.client.get(url).send().await?.json().await?;
+        let res: LookupRes = self.client.get(url).send().await?.json().await?;
         Ok(res)
     }
 }
