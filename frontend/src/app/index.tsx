@@ -13,7 +13,12 @@ import "./index.css";
 
 let baseUrl = "ws://localhost:3080";
 if (import.meta.env.PROD) {
-  baseUrl = "wss://" + location.host;
+  const isSecure = location.protocol === "https:";
+  if (isSecure) {
+    baseUrl = "wss://" + location.host;
+  } else {
+    baseUrl = "ws://" + location.host;
+  }
 }
 
 const client = createClient<Procedures>({

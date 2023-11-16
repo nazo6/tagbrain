@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT \n                id as \"id: i64\",\n                created_at,\n                success,\n                message,\n                old_metadata as \"old_metadata?: sqlx::types::Json<Metadata>\",\n                new_metadata as \"new_metadata?: sqlx::types::Json<Metadata>\",\n                source_path,\n                target_path,\n                acoustid_score,\n                retry_count\n            FROM log ORDER BY id DESC LIMIT ? OFFSET ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id: i64",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "success",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "message",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "old_metadata?: sqlx::types::Json<Metadata>",
+        "ordinal": 4,
+        "type_info": "Null"
+      },
+      {
+        "name": "new_metadata?: sqlx::types::Json<Metadata>",
+        "ordinal": 5,
+        "type_info": "Null"
+      },
+      {
+        "name": "source_path",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "target_path",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "acoustid_score",
+        "ordinal": 8,
+        "type_info": "Float"
+      },
+      {
+        "name": "retry_count",
+        "ordinal": 9,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "b00934be9d3dfa7f0712d5be3ddfa96e585a211962621dd6fc2120a26e07e8d2"
+}

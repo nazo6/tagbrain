@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use config::CONFIG;
 use job::JobCommand;
 use once_cell::sync::Lazy;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -19,7 +20,12 @@ type JobReceiver = UnboundedReceiver<JobCommand>;
 static POOL: Lazy<SqlitePool> = Lazy::new(|| {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         SqlitePool::connect_with(
-            SqliteConnectOptions::from_str("sqlite://./data/db.sqlite").unwrap(),
+            SqliteConnectOptions::from_str(&format!(
+                "sqlite://{}/db.sqlite",
+                CONFIG.read().data_dir
+            ))
+            .unwrap()
+            .create_if_missing(true),
         )
         .await
         .unwrap()
@@ -46,6 +52,7 @@ fn main() -> eyre::Result<()> {
     color_eyre::install()?;
     install_tracing();
 
+    #[cfg(debug_assertions)]
     dotenvy::dotenv().expect(".env file not found");
 
     {
@@ -61,11 +68,14 @@ fn main() -> eyre::Result<()> {
             sqlx::migrate!().run(&*POOL).await?;
 
             let (job_sender, job_receiver) = tokio::sync::mpsc::unbounded_channel::<JobCommand>();
+            let mut sigterm =
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()).unwrap();
 
             tokio::select!(
                 _ = router::start_server(job_sender.clone()) => {},
                 _ = watcher::start_watcher(job_sender) => {},
                 _ = job::start_job(job_receiver) => {}
+                _ = sigterm.recv() => {}
             );
 
             Ok::<_, eyre::Report>(())

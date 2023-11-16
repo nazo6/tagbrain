@@ -3,8 +3,11 @@ use std::{
     sync::Arc,
 };
 
+use tracing::info;
+
 use crate::{router::handlers::AppState, JobSender};
 
+mod frontend;
 mod handlers;
 
 #[tracing::instrument]
@@ -29,7 +32,13 @@ pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
             .axum(),
     );
 
+    #[cfg(not(debug_assertions))]
+    let app = app.fallback(frontend::static_handler);
+
     let addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 3080);
+
+    info!("Listening on {}", addr);
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

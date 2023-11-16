@@ -1,0 +1,14 @@
+version: "3"
+services:
+  app:
+    image: ${IMAGE}
+    build: .
+    ports:
+      - 3090:3080
+    volumes:
+      - ./backend/data/docker-data/config:/config
+      - ./backend/data/docker-data/data:/data
+      - ./backend/data/docker-data/source:/source
+      - ./backend/data/docker-data/target:/target
+    environment:
+      - ACOUST_ID_API_KEY=${ACOUST_ID_API_KEY}
