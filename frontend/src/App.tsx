@@ -1,35 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+
+import { Box, Button, Checkbox, Group, TextInput } from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { client } from "./client";
+import { notifications } from "@mantine/notifications";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const form = useForm({
+    initialValues: {
+      scanPath: "",
+    },
+  });
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2 items-center">
+        <TextInput
+          placeholder="Scan path"
+          {...form.getInputProps("scanPath")}
+        />
+        <Button
+          onClick={async () => {
+            try {
+              await client.api.scan({ path: form.values.scanPath });
+              notifications.show({
+                title: "Success",
+                message: "Send request",
+              });
+            } catch (e: any) {
+              notifications.show({
+                title: "Error",
+                message: e.message ?? "Unknown error",
+              });
+            }
+          }}
+        >
+          Scan
+        </Button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div className="flex">
+        <Button
+          onClick={async () => {
+            try {
+              await client.api.scanAll();
+              notifications.show({
+                title: "Success",
+                message: "Send request",
+              });
+            } catch (e: any) {
+              notifications.show({
+                title: "Error",
+                message: e.message ?? "Unknown error",
+              });
+            }
+          }}
+        >
+          Scan all files
+        </Button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;

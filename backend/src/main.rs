@@ -62,10 +62,10 @@ fn main() -> eyre::Result<()> {
 
             let (job_sender, job_receiver) = tokio::sync::mpsc::unbounded_channel::<JobCommand>();
 
-            let _ = tokio::join!(
-                app::start_server(job_sender.clone()),
-                watcher::start_watcher(job_sender),
-                job::start_job(job_receiver)
+            let _ = tokio::select!(
+                _ = router::start_server(job_sender.clone()) => {},
+                _ = watcher::start_watcher(job_sender) => {},
+                _ = job::start_job(job_receiver) => {}
             );
 
             Ok::<_, eyre::Report>(())

@@ -12,11 +12,7 @@ use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
 
 use crate::config::CONFIG;
-use crate::job::QueueItem;
-use crate::{
-    job::{JobCommand, QueueKind},
-    JobSender,
-};
+use crate::{job::JobCommand, JobSender};
 
 pub fn async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
     let (tx, rx) = channel(1);
@@ -58,10 +54,10 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
 
                             info!("File added. Sending job to queue: {:?}", path);
                             job_sender
-                                .send(JobCommand::Enqueue(QueueItem {
-                                    kind: QueueKind::Scan { path },
+                                .send(JobCommand::Scan {
+                                    path,
                                     retry_count: 0,
-                                }))
+                                })
                                 .unwrap();
                         });
                     }
