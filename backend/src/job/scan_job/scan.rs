@@ -132,7 +132,7 @@ fn format_to_metadata(
         label: release_additional.label_info.and_then(|label| {
             label
                 .first()
-                .and_then(|li| li.label.as_ref().map(|label| label.id.clone()))
+                .and_then(|li| li.label.as_ref().map(|label| label.name.clone()))
         }),
         media: release.release_group.primary_type,
         musicbrainz_track_id: Some(this_track.id.clone()),
