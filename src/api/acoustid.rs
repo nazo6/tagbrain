@@ -28,6 +28,7 @@ impl AcoustidClient {
         Self { client }
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn lookup(&self, fingerprint: &str, duration: u32) -> Result<LookupRes, eyre::Error> {
         let url = "https://api.acoustid.org/v2/lookup";
         let url = url::Url::parse_with_params(

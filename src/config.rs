@@ -1,4 +1,7 @@
-use std::sync::RwLock;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::RwLock,
+};
 
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -133,6 +136,17 @@ impl Drop for ConfigRwLockWriteGuardWrapper<'_> {
                 info!("Config file updated.");
             }
         });
+    }
+}
+impl Deref for ConfigRwLockWriteGuardWrapper<'_> {
+    type Target = Config;
+    fn deref(&self) -> &Self::Target {
+        &self.config
+    }
+}
+impl DerefMut for ConfigRwLockWriteGuardWrapper<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.config
     }
 }
 

@@ -1,5 +1,3 @@
-use tracing::warn;
-
 use super::{ArtistCredit, MusicbrainzClient};
 
 #[derive(serde::Deserialize, Debug)]
@@ -35,13 +33,13 @@ impl MusicbrainzClient {
             &url,
             &[("fmt", "json"), ("inc", "releases+release-groups+artists")],
         )?;
-        // let res: RecordingRes = self.client.get(url).send().await?.json().await?;
-        let text = self.client.get(url).send().await?.text().await?;
-        let debug_res: serde_json::Value = serde_json::from_str(&text)?;
-        let res = serde_json::from_str::<RecordingRes>(&text);
-        if let Err(e) = &res {
-            warn!("recording dbg {}: {:?}", id, debug_res);
-        }
-        Ok(res?)
+        let res: RecordingRes = self.client.get(url).send().await?.json().await?;
+        // let text = self.get(url).await?.text().await?;
+        // let debug_res: serde_json::Value = serde_json::from_str(&text)?;
+        // let res = serde_json::from_str::<RecordingRes>(&text);
+        // if let Err(e) = &res {
+        //     warn!("recording dbg {}: {:?}", id, debug_res);
+        // }
+        Ok(res)
     }
 }

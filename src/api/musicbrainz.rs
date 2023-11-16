@@ -4,6 +4,7 @@ pub mod release;
 
 pub struct MusicbrainzClient {
     client: reqwest::Client,
+    semaphore: tokio::sync::Semaphore,
 }
 
 impl MusicbrainzClient {
@@ -12,7 +13,19 @@ impl MusicbrainzClient {
             .user_agent(&CONFIG.read().app_ua)
             .build()
             .unwrap();
-        Self { client }
+        Self {
+            client,
+            semaphore: tokio::sync::Semaphore::new(1),
+        }
+    }
+    async fn get(&self, url: url::Url) -> Result<reqwest::Response, reqwest::Error> {
+        let res = self.client.get(url).send().await;
+
+        // musicbrainz api rate limit is 1 request per second...
+        // so we need to wait 1 second before next request and we use semaphore to disable parallel request
+        let _permit = self.semaphore.acquire().await;
+        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        res
     }
 }
 

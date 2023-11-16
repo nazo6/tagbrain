@@ -54,7 +54,7 @@ impl MusicbrainzClient {
             &url,
             &[("fmt", "json"), ("inc", "artists+recordings+labels")],
         )?;
-        let res: ReleaseRes = self.client.get(url).send().await?.json().await?;
+        let res: ReleaseRes = self.get(url).await?.json().await?;
         Ok(res)
     }
 }

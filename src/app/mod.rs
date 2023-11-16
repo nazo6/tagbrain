@@ -6,7 +6,7 @@ use once_cell::sync::OnceCell;
 use tracing::info;
 
 use crate::{
-    config::CONFIG,
+    config::{Config, CONFIG},
     job::{JobCommand, QueueItem, QueueKind},
     JobSender,
 };
@@ -56,6 +56,13 @@ pub async fn start_server(job_sender: JobSender) {
 
 fn App(cx: Scope) -> Element {
     let file_input = use_state(cx, || "".to_string());
+    let config = use_state(cx, || toml::to_string(&*CONFIG.read()).unwrap());
+    let set_config = move |_| {
+        let config = toml::from_str::<Config>(config);
+        if let Ok(config) = config {
+            *CONFIG.write() = config;
+        }
+    };
 
     let scan_all = |_| {
         let source_dir = CONFIG.read().source_dir.clone();
@@ -104,6 +111,21 @@ fn App(cx: Scope) -> Element {
         button {
             onclick: scan_all,
             "Scan all file",
+        },
+        br {},
+        div {
+            textarea {
+                style: r#"width: 700px; height: 500px;"#,
+                value: "{config}",
+                oninput: move |e| {
+                    config.set(e.data.value.clone());
+                },
+            },
+            br {},
+            button {
+                onclick: set_config,
+                "Set config",
+            },
         }
     })
 }
