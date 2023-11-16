@@ -7,11 +7,10 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing_error::ErrorLayer;
 
 mod api;
-#[allow(non_snake_case)]
-mod app;
 mod config;
 mod interface;
 mod job;
+mod router;
 mod watcher;
 
 type JobSender = UnboundedSender<JobCommand>;
