@@ -1,7 +1,7 @@
 use lofty::{ItemKey, ItemValue, Tag, TagItem};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, rspc::Type)]
 pub struct Metadata {
     pub title: Option<String>,
     pub artist: Option<String>,

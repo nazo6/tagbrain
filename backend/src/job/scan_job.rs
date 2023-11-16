@@ -28,9 +28,9 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         true,
                         old_metadata,
                         new_metadata,
-                        res.acoustid_score,
                         source_path,
                         target_path,
+                        res.acoustid_score,
                         retry_count
                     ).execute(&*POOL).await;
                     if let Err(err) = res {

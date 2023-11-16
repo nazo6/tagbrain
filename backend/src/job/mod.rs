@@ -3,27 +3,35 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tracing::info;
 
 use crate::{config::CONFIG, JobReceiver};
 
 mod scan_job;
 
+#[derive(Debug, rspc::Type, serde::Serialize)]
+pub struct QueueInfo {
+    pub queue_count: u32,
+    pub current_job: Option<JobTask>,
+}
+
 #[derive(Debug)]
 pub enum JobCommand {
     Scan { path: PathBuf, retry_count: u8 },
     ScanAll,
     ClearQueue,
+    GetQueueInfo { sender: oneshot::Sender<QueueInfo> },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, rspc::Type, serde::Serialize)]
 pub enum JobTask {
     Scan { path: PathBuf, retry_count: u8 },
 }
 
 pub struct Queue {
     pub queue: Mutex<Vec<JobTask>>,
+    pub current_job: Mutex<Option<JobTask>>,
     pub channel: mpsc::UnboundedSender<()>,
 }
 impl Queue {
@@ -32,6 +40,7 @@ impl Queue {
         (
             Self {
                 queue: Mutex::new(vec![]),
+                current_job: Mutex::new(None),
                 channel: channel.0,
             },
             channel.1,
@@ -43,7 +52,9 @@ impl Queue {
         self.channel.send(()).unwrap();
     }
     pub fn dequeue(&self) -> Option<JobTask> {
-        self.queue.lock().unwrap().pop()
+        let job = self.queue.lock().unwrap().pop();
+        *self.current_job.lock().unwrap() = job.clone();
+        job
     }
     pub fn clear(&self) {
         self.queue.lock().unwrap().clear();
@@ -77,6 +88,14 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
                     JobCommand::ClearQueue => {
                         queue.clear();
                     }
+                    JobCommand::GetQueueInfo { sender } => {
+                        sender
+                            .send(QueueInfo {
+                                queue_count: queue.queue.lock().unwrap().len() as u32,
+                                current_job: queue.current_job.lock().unwrap().clone(),
+                            })
+                            .unwrap();
+                    }
                 }
             }
         });
@@ -86,12 +105,13 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
 
     while (receiver.recv().await).is_some() {
         while let Some(item) = queue.dequeue() {
+            let semaphore = semaphore.clone();
+            let permit = semaphore.clone().acquire_owned().await.unwrap();
             match item {
                 JobTask::Scan { path, retry_count } => {
-                    let semaphore = semaphore.clone();
                     let q2 = queue.clone();
                     tokio::spawn(async move {
-                        let _permit = semaphore.clone().acquire_owned().await.unwrap();
+                        let _permit = permit;
                         scan_job::scan_job(&path, q2, retry_count).await;
                     });
                 }

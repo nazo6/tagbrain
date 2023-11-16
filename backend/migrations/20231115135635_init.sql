@@ -1,7 +1,7 @@
 -- Add migration script here
 
 CREATE TABLE IF NOT EXISTS log (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     success BOOLEAN NOT NULL,
     message TEXT,
