@@ -10,7 +10,7 @@ use crate::{router::handlers::AppState, JobSender};
 mod frontend;
 mod handlers;
 
-#[tracing::instrument]
+#[tracing::instrument(skip(job_sender))]
 pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
     let router = rspc::Router::<AppState>::new()
         .mutation("scan", |t| t(handlers::scan::scan))

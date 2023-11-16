@@ -12,13 +12,14 @@ use tracing::{error, info};
 pub struct Config {
     pub source_dir: String,
     pub target_dir: String,
-    pub log_dir: String,
     pub data_dir: String,
     pub acoust_id_api_key: String,
     pub app_ua: String,
     pub acoustid_match_threshold: f64,
     pub release_selector: ReleaseSelector,
     pub allowed_extensions: Vec<String>,
+    pub delete_original: bool,
+    pub overwrite: bool,
 }
 
 impl Default for Config {
@@ -27,7 +28,6 @@ impl Default for Config {
             source_dir: "/source".to_string(),
             target_dir: "/target".to_string(),
             data_dir: "/data".to_string(),
-            log_dir: "./data/log".to_string(),
             acoust_id_api_key: std::env::var("ACOUST_ID_API_KEY")
                 .expect("ACOUST_ID_API_KEY not set"),
             app_ua: concat!(
@@ -50,6 +50,8 @@ impl Default for Config {
                 "wma".to_string(),
                 "wav".to_string(),
             ],
+            delete_original: false,
+            overwrite: false,
         }
     }
 }

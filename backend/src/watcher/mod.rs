@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
+use notify::event::ModifyKind;
 use notify::{
     event::AccessKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
 };
@@ -37,7 +38,7 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
         let file_last_modified = file_last_modified.clone();
         match res {
             Ok(event) => {
-                if let EventKind::Access(AccessKind::Close(_)) = event.kind {
+                if let EventKind::Access(AccessKind::Close(_)) | EventKind::Create(_) = event.kind {
                     info!("File maybe added. waiting...");
                     if let Some(path) = event.paths.get(0) {
                         let path = path.to_path_buf();
@@ -60,6 +61,45 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
                                 })
                                 .unwrap();
                         });
+                    }
+                } else if let EventKind::Modify(ModifyKind::Name(notify::event::RenameMode::To)) =
+                    event.kind
+                {
+                    // this occurs when a file is moved
+                    if let Some(path) = event.paths.get(0) {
+                        let path = path.to_path_buf();
+                        let paths = if path.is_dir() {
+                            walkdir::WalkDir::new(source_dir)
+                                .into_iter()
+                                .flatten()
+                                .filter(|item| item.file_type().is_file())
+                                .map(|item| item.path().to_path_buf())
+                                .collect::<Vec<_>>()
+                        } else {
+                            vec![path]
+                        };
+                        paths.into_iter().for_each(|path| {
+                            let job_sender = job_sender.clone();
+                            let file_last_modified = file_last_modified.clone();
+                            tokio::spawn(async move {
+                                sleep(Duration::from_secs(1)).await;
+                                if let Some(last_modified) =
+                                    file_last_modified.lock().unwrap().get(&path)
+                                {
+                                    if last_modified.elapsed().unwrap().as_secs() < 1 {
+                                        return;
+                                    }
+                                }
+
+                                info!("File added. Sending job to queue: {:?}", path);
+                                job_sender
+                                    .send(JobCommand::Scan {
+                                        path,
+                                        retry_count: 0,
+                                    })
+                                    .unwrap();
+                            });
+                        })
                     }
                 } else if let EventKind::Modify(_) = event.kind {
                     if let Some(path) = event.paths.get(0) {

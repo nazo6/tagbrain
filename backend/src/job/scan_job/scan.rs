@@ -32,9 +32,10 @@ async fn acoustid_find(fingerprint: &str, duration: f64) -> Result<Option<Lookup
     let Some(best) = acoustid_res
         .results
         .into_iter()
-        .max_by(|a, b| a.score.partial_cmp(&b.score).unwrap()) else {
-            return Ok(None);
-        };
+        .max_by(|a, b| a.score.partial_cmp(&b.score).unwrap())
+    else {
+        return Ok(None);
+    };
 
     if best.score < CONFIG.read().acoustid_match_threshold {
         return Ok(None);
@@ -222,8 +223,31 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         ext
     ));
 
+    if let Ok(exist) = tokio::fs::try_exists(path).await {
+        if exist && !CONFIG.read().overwrite {
+            return Err(eyre!("File already exists! Skipping..."));
+        }
+    }
     tokio::fs::create_dir_all(new_path.parent().unwrap()).await?;
     tokio::fs::copy(path, &new_path).await?;
+    if CONFIG.read().delete_original {
+        let res = tokio::fs::remove_file(path).await;
+        if let Err(e) = res {
+            warn!("Failed to delete original file: {}", e);
+        }
+        let source_dir = CONFIG.read().source_dir.clone();
+        if let (Ok(source_dir_abs), Ok(original_path_abs)) =
+            (Path::new(&source_dir).canonicalize(), path.canonicalize())
+        {
+            let res = tokio::task::spawn_blocking(move || {
+                delete_empty_folder_recursive(&original_path_abs, &source_dir_abs)
+            })
+            .await;
+            if let Err(e) = res {
+                warn!("Failed to delete empty folder: {}", e);
+            }
+        }
+    }
 
     let mut tagged_file_new = read_from_path(&new_path)
         .ok()
@@ -245,4 +269,25 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         acoustid_score: acoustid_match.score,
         target_path: new_path,
     })
+}
+
+fn delete_empty_folder_recursive(path: &Path, stop_at: &Path) -> Result<()> {
+    if path == stop_at {
+        return Ok(());
+    }
+    if path.is_dir() {
+        let mut is_empty = true;
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                delete_empty_folder_recursive(&path, stop_at)?;
+            }
+            is_empty = false;
+        }
+        if is_empty {
+            std::fs::remove_dir(path)?;
+        }
+    }
+    Ok(())
 }
