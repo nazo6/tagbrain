@@ -23,6 +23,7 @@ pub struct RecordingResReleaseGroup {
     pub id: String,
     pub title: String,
     pub primary_type: Option<String>,
+    pub first_release_date: Option<String>,
 }
 
 impl MusicbrainzClient {

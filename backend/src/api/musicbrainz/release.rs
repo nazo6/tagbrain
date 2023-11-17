@@ -7,6 +7,14 @@ pub struct ReleaseRes {
     pub artist_credit: Option<Vec<ArtistCredit>>,
     pub media: Vec<ReleaseResMedia>,
     pub title: String,
+    pub text_representation: Option<ReleaseResTextRepresentation>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReleaseResTextRepresentation {
+    pub script: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(serde::Deserialize, Debug)]

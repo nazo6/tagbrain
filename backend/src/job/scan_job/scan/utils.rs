@@ -26,7 +26,7 @@ pub(super) async fn calc_fingerprint(path: &Path) -> eyre::Result<FpcalcResult> 
 
 pub(super) fn calc_release_score(
     release: &RecordingResRelease,
-    current_tag: Option<&Tag>,
+    current_tag: &Tag,
     release_selector: &ReleaseSelector,
 ) -> f64 {
     let mut score = 0.0;
@@ -51,7 +51,7 @@ pub(super) fn calc_release_score(
         }
     }
 
-    let title_distance_score = if let Some(Some(album)) = current_tag.map(|t| t.album()) {
+    let title_distance_score = if let Some(album) = current_tag.album() {
         let distance_score = strsim::normalized_levenshtein(&album, &release.release_group.title);
         if distance_score >= release_selector.release_title_distance.threshold {
             distance_score

@@ -27,7 +27,7 @@ export type Metadata = {
   label: string | null;
   media: string | null;
   musicbrainz_track_id: string | null;
-  musicbrainz_album_id: string | null;
+  musicbrainz_release_id: string | null;
   musicbrainz_artist_id: string | null;
   musicbrainz_release_artist_id: string | null;
   musicbrainz_release_group_id: string | null;
@@ -76,7 +76,7 @@ export function LogView({ log }: { log: ScanLog }) {
                   getRow(log, "label"),
                   getRow(log, "media"),
                   getRow(log, "musicbrainz_track_id"),
-                  getRow(log, "musicbrainz_album_id"),
+                  getRow(log, "musicbrainz_release_id"),
                   getRow(log, "musicbrainz_artist_id"),
                   getRow(log, "musicbrainz_release_artist_id"),
                   getRow(log, "musicbrainz_release_group_id"),

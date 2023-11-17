@@ -16,7 +16,7 @@ export type ScanRequest = { path: string }
 
 export type JobTask = { Scan: { path: string; retry_count: number } }
 
-export type Metadata = { title: string | null; artist: string | null; artist_sort: string | null; album: string | null; album_artist: string | null; album_artist_sort: string | null; track: string | null; total_tracks: string | null; disk: string | null; total_disks: string | null; date: string | null; year: string | null; label: string | null; media: string | null; musicbrainz_track_id: string | null; musicbrainz_album_id: string | null; musicbrainz_artist_id: string | null; musicbrainz_release_artist_id: string | null; musicbrainz_release_group_id: string | null }
+export type Metadata = { title: string | null; artist: string | null; artist_sort: string | null; album: string | null; album_artist: string | null; album_artist_sort: string | null; track: string | null; total_tracks: string | null; disk: string | null; total_disks: string | null; original_date: string | null; date: string | null; year: string | null; label: string | null; media: string | null; script: string | null; musicbrainz_track_id: string | null; musicbrainz_recording_id: string | null; musicbrainz_artist_id: string | null; musicbrainz_release_id: string | null; musicbrainz_release_artist_id: string | null; musicbrainz_release_group_id: string | null }
 
 export type ScanLogRequest = { limit: number; page: number }
 

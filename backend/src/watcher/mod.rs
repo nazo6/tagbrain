@@ -39,7 +39,6 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
         match res {
             Ok(event) => {
                 if let EventKind::Access(AccessKind::Close(_)) | EventKind::Create(_) = event.kind {
-                    info!("File maybe added. waiting...");
                     if let Some(path) = event.paths.get(0) {
                         let path = path.to_path_buf();
                         let job_sender = job_sender.clone();

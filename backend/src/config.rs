@@ -77,12 +77,12 @@ impl Default for ReleaseSelector {
     fn default() -> Self {
         Self {
             release_group_type: MatchReleaseSelector {
-                /// ex: ["Album", "EP", "Single"]
+                // ex: ["Album", "EP", "Single"]
                 preferred: vec![],
                 weight: 1.0,
             },
             country: MatchReleaseSelector {
-                /// ex: ["US", "JP", "XW"]
+                // ex: ["US", "JP", "XW"]
                 preferred: vec![],
                 weight: 1.0,
             },
