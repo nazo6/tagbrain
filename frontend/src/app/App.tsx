@@ -51,10 +51,10 @@ function App() {
             )}
           </div>
         </div>
-        <div className="grid grid-rows-2 lg:grid-rows-none lg:grid-cols-2 gap-2">
+        <div className="lg:grid lg:grid-cols-2 gap-2">
           {log && (
             <LogTable
-              className="row-span-1 lg:col-span-1 lg:min-h-[500px]"
+              className="lg:col-span-1 whitespace-nowrap"
               data={log[0]}
               changePage={(page) => setLogPage(page - 1)}
               page={logPage + 1}
@@ -65,7 +65,7 @@ function App() {
             />
           )}
           {logToShow && (
-            <div className="row-span-1 lg:col-span-1">
+            <div className="lg:col-span-1">
               <LogView log={logToShow} />
             </div>
           )}

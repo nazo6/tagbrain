@@ -14,17 +14,17 @@ export function LogTable(
     className?: string;
   },
 ) {
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   return (
     <div
       className={props.className}
     >
       <DataTable
-        height="auto"
+        height="470px"
         records={props.data}
         withTableBorder
-        rowClassName={(_data, i) => {
-          if (i == selectedRow) return "bg-gray-300/30";
+        rowClassName={(data) => {
+          if (data.id == selectedId) return "bg-gray-300/30";
         }}
         columns={[
           { accessor: "id", title: "#", textAlign: "right" },
@@ -53,8 +53,8 @@ export function LogTable(
         onPageChange={props.changePage}
         totalRecords={props.totalRecords}
         recordsPerPage={props.recordsPerPage}
-        onRowClick={({ record, index }) => {
-          setSelectedRow(index);
+        onRowClick={({ record }) => {
+          setSelectedId(record.id);
           props.onRowClick(record);
         }}
       />
