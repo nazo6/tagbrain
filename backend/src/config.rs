@@ -106,9 +106,8 @@ pub struct DistanceReleaseSelector {
     pub weight: f64,
 }
 
-static CONFIG_PATH: Lazy<String> = Lazy::new(|| {
-    std::env::var("CONFIG_PATH").unwrap_or_else(|_| "./config/config.toml".to_string())
-});
+static CONFIG_PATH: Lazy<String> =
+    Lazy::new(|| std::env::var("CONFIG_PATH").expect("CONFIG_PATH not set"));
 
 pub struct ConfigWrapper {
     pub config: RwLock<Config>,

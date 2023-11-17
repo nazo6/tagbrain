@@ -7,6 +7,7 @@ use tracing::info;
 
 use crate::{router::handlers::AppState, JobSender};
 
+#[cfg(not(debug_assertions))]
 mod frontend;
 mod handlers;
 

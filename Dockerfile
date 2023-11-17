@@ -6,7 +6,6 @@ COPY ./package.json ./app/package.json
 COPY ./pnpm-lock.yaml ./app/pnpm-lock.yaml
 COPY ./pnpm-workspace.yaml ./app/pnpm-workspace.yaml
 WORKDIR /app/frontend
-RUN pnpm --version
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
