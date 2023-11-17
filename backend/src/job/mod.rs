@@ -103,17 +103,19 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
 
     let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
 
-    while (receiver.recv().await).is_some() {
-        while let Some(item) = queue.dequeue() {
-            let semaphore = semaphore.clone();
-            let permit = semaphore.clone().acquire_owned().await.unwrap();
-            match item {
-                JobTask::Scan { path, retry_count } => {
-                    let q2 = queue.clone();
-                    tokio::spawn(async move {
-                        let _permit = permit;
-                        scan_job::scan_job(&path, q2, retry_count).await;
-                    });
+    loop {
+        if receiver.recv().await.is_some() {
+            while let Some(item) = queue.dequeue() {
+                let semaphore = semaphore.clone();
+                let permit = semaphore.clone().acquire_owned().await.unwrap();
+                match item {
+                    JobTask::Scan { path, retry_count } => {
+                        let q2 = queue.clone();
+                        tokio::spawn(async move {
+                            let _permit = permit;
+                            scan_job::scan_job(&path, q2, retry_count).await;
+                        });
+                    }
                 }
             }
         }

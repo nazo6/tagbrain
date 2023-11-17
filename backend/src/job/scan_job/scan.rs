@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use eyre::{eyre, Result};
-use lofty::{read_from_path, Tag, TaggedFileExt};
+use eyre::{eyre, Context, Result};
+use lofty::{read_from_path, AudioFile, Tag, TaggedFileExt};
 use tracing::{debug, info, warn};
 
 use crate::{
@@ -235,18 +235,6 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         if let Err(e) = res {
             warn!("Failed to delete original file: {}", e);
         }
-        let source_dir = CONFIG.read().source_dir.clone();
-        if let (Ok(source_dir_abs), Ok(original_path_abs)) =
-            (Path::new(&source_dir).canonicalize(), path.canonicalize())
-        {
-            let res = tokio::task::spawn_blocking(move || {
-                delete_empty_folder_recursive(&original_path_abs, &source_dir_abs)
-            })
-            .await;
-            if let Err(e) = res {
-                warn!("Failed to delete empty folder: {}", e);
-            }
-        }
     }
 
     let mut tagged_file_new = read_from_path(&new_path)
@@ -256,6 +244,9 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         .primary_tag_mut()
         .ok_or_else(|| eyre!("Failed to open new file"))?;
     write_metadata(tag_new, metadata.clone());
+    tagged_file_new
+        .save_to_path(&new_path)
+        .wrap_err("Failed to write tag to file!")?;
 
     let old_metadata = if let Some(tag) = tag {
         Metadata::from_tag(tag)
@@ -269,25 +260,4 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         acoustid_score: acoustid_match.score,
         target_path: new_path,
     })
-}
-
-fn delete_empty_folder_recursive(path: &Path, stop_at: &Path) -> Result<()> {
-    if path == stop_at {
-        return Ok(());
-    }
-    if path.is_dir() {
-        let mut is_empty = true;
-        for entry in std::fs::read_dir(path)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_dir() {
-                delete_empty_folder_recursive(&path, stop_at)?;
-            }
-            is_empty = false;
-        }
-        if is_empty {
-            std::fs::remove_dir(path)?;
-        }
-    }
-    Ok(())
 }

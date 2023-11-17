@@ -5,6 +5,7 @@ use job::JobCommand;
 use once_cell::sync::Lazy;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tracing::{error, info, warn};
 use tracing_error::ErrorLayer;
 
 mod api;
@@ -73,9 +74,15 @@ fn main() -> eyre::Result<()> {
 
             tokio::select!(
                 _ = router::start_server(job_sender.clone()) => {},
-                _ = watcher::start_watcher(job_sender) => {},
-                _ = job::start_job(job_receiver) => {}
-                _ = sigterm.recv() => {}
+                _ = watcher::start_watcher(job_sender) => {
+                    warn!("Watcher exited, exiting...");
+                },
+                _ = job::start_job(job_receiver) => {
+                    error!("Job exited, exiting...");
+                }
+                _ = sigterm.recv() => {
+                    info!("Received SIGTERM, exiting...");
+                }
             );
 
             Ok::<_, eyre::Report>(())

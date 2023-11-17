@@ -24,7 +24,7 @@ pub fn async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::R
     Ok((watcher, rx))
 }
 
-#[tracing::instrument(skip(job_sender))]
+#[tracing::instrument(skip(job_sender), err)]
 pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
     let (mut watcher, mut rx) = async_watcher()?;
 
