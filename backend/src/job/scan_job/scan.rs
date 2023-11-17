@@ -223,7 +223,7 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         ext
     ));
 
-    if let Ok(exist) = tokio::fs::try_exists(path).await {
+    if let Ok(exist) = tokio::fs::try_exists(&new_path).await {
         if exist && !CONFIG.read().overwrite {
             return Err(eyre!("File already exists! Skipping..."));
         }
