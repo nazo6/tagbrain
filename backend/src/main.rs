@@ -37,7 +37,7 @@ fn install_tracing() {
     use tracing_subscriber::prelude::*;
     use tracing_subscriber::{fmt, EnvFilter};
 
-    let fmt_layer = fmt::layer().with_target(false).pretty();
+    let fmt_layer = fmt::layer().with_target(false);
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
@@ -50,7 +50,6 @@ fn install_tracing() {
 }
 
 fn main() -> eyre::Result<()> {
-    color_eyre::install()?;
     install_tracing();
 
     #[cfg(debug_assertions)]

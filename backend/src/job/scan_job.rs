@@ -46,7 +46,7 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         });
                     } else {
                         error!("Failed to scan: {:?}", err);
-                        let err = format!("{}", err);
+                        let err = format!("{:?}", err);
                         let path = path.to_string_lossy();
                         query!(
                             "INSERT INTO log (success, message, source_path, retry_count) VALUES (?,?,?,?)",

@@ -86,7 +86,7 @@ export function LogView({ log }: { log: ScanLog }) {
           </div>
         )
         : (
-          <div className="flex flex-col">
+          <div className="flex flex-col whitespace-pre-wrap">
             <Table
               data={{
                 head: [

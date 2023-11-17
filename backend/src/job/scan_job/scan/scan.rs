@@ -30,9 +30,7 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
     let calculated = calc_fingerprint(path)
         .await
         .wrap_err("Failed to calc fingerprint")?;
-    let acoustid_match = acoustid_find(&calculated.fingerprint, calculated.duration)
-        .await?
-        .ok_or_else(|| eyre!("No acoustid match found."))?;
+    let acoustid_match = acoustid_find(&calculated.fingerprint, calculated.duration).await?;
     debug!(
         "Best match acoustid was {} (score: {})",
         acoustid_match.id, acoustid_match.score
@@ -88,7 +86,7 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
 }
 
 #[tracing::instrument]
-async fn acoustid_find(fingerprint: &str, duration: f64) -> Result<Option<LookupResEntry>> {
+async fn acoustid_find(fingerprint: &str, duration: f64) -> Result<LookupResEntry, eyre::Report> {
     let acoustid_client = AcoustidClient::new();
     let acoustid_res = acoustid_client
         .lookup(fingerprint, duration.round() as u32)
@@ -98,14 +96,17 @@ async fn acoustid_find(fingerprint: &str, duration: f64) -> Result<Option<Lookup
         .into_iter()
         .max_by(|a, b| a.score.partial_cmp(&b.score).unwrap())
     else {
-        return Ok(None);
+        return Err(eyre!("No acoustid match found."));
     };
 
     if best.score < CONFIG.read().acoustid_match_threshold {
-        return Ok(None);
+        return Err(eyre!(
+            "Best acoustid match score is too low. Score: {}",
+            best.score
+        ));
     }
 
-    Ok(Some(best))
+    Ok(best)
 }
 
 fn find_best_release_and_recording(
