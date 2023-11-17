@@ -5,11 +5,11 @@ use tracing::{error, info, warn};
 
 use crate::{
     config::CONFIG,
-    job::{scan_job::scan::scan_and_copy, JobTask},
+    job::{scan_job::scan_and_copy::scan_and_copy, JobTask},
     POOL,
 };
 
-mod scan;
+mod scan_and_copy;
 
 #[tracing::instrument(skip(queue))]
 pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u8) {
@@ -23,6 +23,10 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                     let new_metadata = serde_json::to_string(&res.new_metadata).unwrap();
                     let source_path = path.to_string_lossy();
                     let target_path = res.target_path.to_string_lossy();
+                    let acoustid_score = match res.scanner_info {
+                        scan_and_copy::ScannerInfo::AcoustId { score } => Some(score),
+                        _ => None,
+                    };
                     let res = query!(
                         "INSERT INTO log (success, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?)",
                         true,
@@ -30,7 +34,7 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         new_metadata,
                         source_path,
                         target_path,
-                        res.acoustid_score,
+                        acoustid_score,
                         retry_count
                     ).execute(&*POOL).await;
                     if let Err(err) = res {

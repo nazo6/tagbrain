@@ -8,6 +8,8 @@ pub struct ReleaseRes {
     pub media: Vec<ReleaseResMedia>,
     pub title: String,
     pub text_representation: Option<ReleaseResTextRepresentation>,
+    pub date: Option<String>,
+    pub disambiguation: Option<String>,
 }
 
 #[derive(serde::Deserialize, Debug)]

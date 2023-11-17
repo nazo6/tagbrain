@@ -7,12 +7,11 @@ pub struct RecordingRes {
     pub id: String,
     pub releases: Vec<RecordingResRelease>,
     pub artist_credit: Option<Vec<ArtistCredit>>,
-    pub first_release_date: String,
+    pub first_release_date: Option<String>,
 }
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct RecordingResRelease {
-    pub date: Option<String>,
     pub id: String,
     pub country: Option<String>,
     pub release_group: RecordingResReleaseGroup,
@@ -24,6 +23,12 @@ pub struct RecordingResReleaseGroup {
     pub title: String,
     pub primary_type: Option<String>,
     pub first_release_date: Option<String>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct RecordingSearchRes {
+    pub recordings: Vec<RecordingRes>,
 }
 
 impl MusicbrainzClient {
@@ -41,6 +46,15 @@ impl MusicbrainzClient {
         // if let Err(e) = &res {
         //     warn!("recording dbg {}: {:?}", id, debug_res);
         // }
+        Ok(res)
+    }
+    pub async fn recording_search(&self, query: &str) -> Result<RecordingSearchRes, eyre::Report> {
+        let url = "https://musicbrainz.org/ws/2/recording";
+        let url = url::Url::parse_with_params(
+            url,
+            &[("fmt", "json"), ("query", query), ("limit", "15")],
+        )?;
+        let res: RecordingSearchRes = self.client.get(url).send().await?.json().await?;
         Ok(res)
     }
 }

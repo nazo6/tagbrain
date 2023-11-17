@@ -1,7 +1,6 @@
 use eyre::{eyre, Context};
 use lofty::{Tag, TagExt};
 use std::path::Path;
-use tracing::warn;
 
 use crate::{
     config::CONFIG,
@@ -31,13 +30,6 @@ pub(super) async fn save_file(
     old_tag
         .save_to_path(target_path)
         .wrap_err("Failed to write tag")?;
-
-    if CONFIG.read().delete_original {
-        let res = tokio::fs::remove_file(source_path).await;
-        if let Err(e) = res {
-            warn!("Failed to delete original file: {}", e);
-        }
-    }
 
     Ok(())
 }

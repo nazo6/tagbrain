@@ -18,7 +18,7 @@ impl MusicbrainzClient {
             semaphore: tokio::sync::Semaphore::new(1),
         }
     }
-    async fn get(&self, url: url::Url) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get(&self, url: url::Url) -> Result<reqwest::Response, reqwest::Error> {
         let res = self.client.get(url).send().await;
 
         // musicbrainz api rate limit is 1 request per second...
@@ -33,7 +33,7 @@ impl MusicbrainzClient {
 #[serde(rename_all = "kebab-case")]
 pub struct ArtistCredit {
     pub artist: ArtistCreditArtist,
-    pub joinphrase: String,
+    pub joinphrase: Option<String>,
 }
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
@@ -51,14 +51,18 @@ impl ArtistCreditVecToString for Vec<ArtistCredit> {
     fn to_string(&self) -> String {
         self.iter().fold(String::new(), |mut acc, ac| {
             acc.push_str(&ac.artist.name);
-            acc.push_str(&ac.joinphrase);
+            if let Some(joinphrase) = &ac.joinphrase {
+                acc.push_str(joinphrase);
+            }
             acc
         })
     }
     fn to_sort_string(&self) -> String {
         self.iter().fold(String::new(), |mut acc, ac| {
             acc.push_str(&ac.artist.sort_name);
-            acc.push_str(&ac.joinphrase);
+            if let Some(joinphrase) = &ac.joinphrase {
+                acc.push_str(joinphrase);
+            }
             acc
         })
     }
