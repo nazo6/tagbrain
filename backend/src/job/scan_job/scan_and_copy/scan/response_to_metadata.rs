@@ -35,15 +35,16 @@ pub(super) fn format_to_metadata(
         artist: recording.artist_credit.as_ref().map(|a| a.to_string()),
         artist_sort: recording.artist_credit.as_ref().map(|a| a.to_sort_string()),
         album: Some({
-            let mut album = release_additional.title.clone();
-            if let Some(disambiguation) = release_additional.disambiguation {
-                if !disambiguation.is_empty() {
-                    album.push_str(" (");
-                    album.push_str(&disambiguation);
-                    album.push(')');
-                }
-            }
-            album
+            // let mut album = release_additional.title.clone();
+            // if let Some(disambiguation) = release_additional.disambiguation {
+            //     if !disambiguation.is_empty() {
+            //         album.push_str(" (");
+            //         album.push_str(&disambiguation);
+            //         album.push(')');
+            //     }
+            // }
+            // album
+            release_additional.title.clone()
         }),
         album_artist: release_additional
             .artist_credit
