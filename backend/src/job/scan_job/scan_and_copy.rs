@@ -29,13 +29,13 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
     let ScanRes {
         old_metadata,
         new_metadata,
-        old_tag,
+        new_tag,
         scanner_info,
     } = scan::scan(path).await.wrap_err("Failed to scan")?;
 
     let new_path = get_save_path_from_metadata(path, &new_metadata)?;
 
-    save::save_file(path, &new_path, old_tag, new_metadata.clone())
+    save::save_file(path, &new_path, new_tag)
         .await
         .wrap_err("Failed to save tag")?;
 

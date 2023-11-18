@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use eyre::Context;
 use lofty::TagExt;
 use sqlx::query;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{
     api::musicbrainz::MusicbrainzClient,
@@ -15,7 +15,9 @@ use crate::{
     POOL,
 };
 
-use super::utils::{get_save_path_from_metadata, read_tag_or_default, response_to_metadata};
+use super::utils::{
+    fetch_cover_art, get_save_path_from_metadata, read_tag_or_default, response_to_metadata,
+};
 
 /// fix metadata with manually provided info
 pub async fn fix_job(path: &Path, release_id: String, recording_id: String, copy_to_target: bool) {
@@ -85,6 +87,15 @@ async fn fix_job_inner(
 
     if !copy_to_target || CONFIG.read().delete_original {
         tokio::fs::remove_file(path).await?;
+    }
+
+    if tag.picture_count() == 0 {
+        let cover_art = fetch_cover_art(&release_id).await;
+
+        match cover_art {
+            Ok(cover_art) => tag.push_picture(cover_art),
+            Err(e) => warn!("Failed to fetch cover art: {}", e),
+        }
     }
 
     write_metadata(&mut tag, metadata.clone());

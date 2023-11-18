@@ -6,7 +6,8 @@ use crate::{
     interface::metadata::Metadata,
 };
 use eyre::{eyre, Context, Result};
-use lofty::{read_from_path, Tag, TaggedFileExt};
+use lofty::{read_from_path, Picture, Tag, TaggedFileExt};
+use sanitize_filename::sanitize;
 
 /// Collect data, and format it into a metadata struct.
 pub(super) fn response_to_metadata(
@@ -78,6 +79,20 @@ pub(super) fn response_to_metadata(
     Ok(metadata)
 }
 
+#[tracing::instrument]
+pub(super) async fn fetch_cover_art(release_id: &str) -> eyre::Result<Picture> {
+    let cover_art = reqwest::get(&format!(
+        "https://coverartarchive.org/release/{}/front",
+        release_id
+    ))
+    .await?
+    .bytes()
+    .await?;
+    let mut cover_art = std::io::Cursor::new(cover_art);
+    let picture = Picture::from_reader(&mut cover_art)?;
+    Ok(picture)
+}
+
 /// Read tag from file. If file has no tag, return default tag.
 pub(super) fn read_tag_or_default(path: &Path) -> eyre::Result<Tag> {
     let tagged_file = read_from_path(path).wrap_err("Failed to read file")?;
@@ -99,35 +114,52 @@ pub(super) fn get_save_path_from_metadata(
 
     let mut new_path = PathBuf::new();
 
-    let artist = metadata
-        .artist
-        .as_ref()
-        .ok_or_else(|| eyre!("artist not found"))?;
-    let album = metadata
-        .album
-        .as_ref()
-        .ok_or_else(|| eyre!("album not found"))?;
-    let title = metadata
-        .title
-        .as_ref()
-        .ok_or_else(|| eyre!("title not found"))?;
+    let artist = sanitize(
+        metadata
+            .artist
+            .as_ref()
+            .ok_or_else(|| eyre!("artist not found"))?,
+    );
+    let album = sanitize(
+        metadata
+            .album
+            .as_ref()
+            .ok_or_else(|| eyre!("album not found"))?,
+    );
+    let title = sanitize(
+        metadata
+            .title
+            .as_ref()
+            .ok_or_else(|| eyre!("title not found"))?,
+    );
     let album_artist = &metadata.album_artist;
     let track = &metadata.track;
 
     new_path.push(CONFIG.read().target_dir.clone());
-    new_path.push(album_artist.clone().unwrap_or(artist.clone()));
+    new_path.push(sanitize(album_artist.clone().unwrap_or(artist.clone())));
     new_path.push(album.clone());
     let file_name = {
         let mut file_name = String::new();
         if let Some(track) = track {
-            file_name.push_str(track);
+            file_name.push_str(&sanitize(track));
             file_name.push_str(" - ");
         }
-        file_name.push_str(title);
+        file_name.push_str(&title);
         file_name.push('.');
         file_name.push_str(ext);
         file_name
     };
     new_path.push(file_name);
     Ok(new_path)
+}
+
+#[cfg(test)]
+mod test {
+    #[tokio::test]
+    async fn cover_art() {
+        let cover_art = super::fetch_cover_art("db85c244-53e7-441c-bab0-52c9c0d27450")
+            .await
+            .unwrap();
+        assert_eq!(cover_art.mime_type().to_string(), "image/jpeg".to_string());
+    }
 }

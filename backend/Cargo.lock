@@ -1788,6 +1788,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sanitize-filename"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ed72fbaf78e6f2d41744923916966c4fbe3d7c74e3037a8ee482f1115572603"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2338,6 +2348,7 @@ dependencies = [
  "reqwest",
  "rspc",
  "rust-embed",
+ "sanitize-filename",
  "serde",
  "serde_json",
  "sqlx",

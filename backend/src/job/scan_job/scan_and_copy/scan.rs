@@ -2,14 +2,14 @@ use std::path::Path;
 
 use eyre::eyre;
 use lofty::Tag;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
     api::musicbrainz::{recording::RecordingRes, MusicbrainzClient},
-    interface::metadata::Metadata,
+    interface::metadata::{write_metadata, Metadata},
     job::{
         scan_job::scan_and_copy::utils::find_best_release_and_recording,
-        utils::{read_tag_or_default, response_to_metadata},
+        utils::{fetch_cover_art, read_tag_or_default, response_to_metadata},
     },
 };
 
@@ -21,7 +21,7 @@ mod musicbrainz_search_scanner;
 pub(super) struct ScanRes {
     pub old_metadata: Metadata,
     pub new_metadata: Metadata,
-    pub old_tag: Tag,
+    pub new_tag: Tag,
     pub scanner_info: ScannerInfo,
 }
 struct ScannerRes {
@@ -29,8 +29,9 @@ struct ScannerRes {
     recordings: Vec<RecordingRes>,
 }
 
+#[tracing::instrument]
 pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
-    let tag = read_tag_or_default(path)?;
+    let mut tag = read_tag_or_default(path)?;
 
     let scanner_res = if let Ok(res) = acoustid_scanner::acoustid_scanner(path).await {
         res
@@ -58,12 +59,22 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
 
     let old_metadata = Metadata::from_tag(&tag);
 
+    if tag.picture_count() == 0 {
+        let cover_art = fetch_cover_art(&release.id).await;
+
+        match cover_art {
+            Ok(cover_art) => tag.push_picture(cover_art),
+            Err(e) => warn!("Failed to fetch cover art: {}", e),
+        }
+    }
+
     let new_metadata = response_to_metadata(best_recording, release)?;
+    write_metadata(&mut tag, new_metadata.clone());
 
     Ok(ScanRes {
         old_metadata,
         new_metadata,
-        old_tag: tag,
+        new_tag: tag,
         scanner_info: scanner_res.log,
     })
 }
