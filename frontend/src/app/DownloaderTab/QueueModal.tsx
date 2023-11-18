@@ -30,8 +30,8 @@ export function QueueModal(
         withTableBorder
         columns={[
           { accessor: "id" },
-          { accessor: "path" },
-          { accessor: "retry_count" },
+          { accessor: "type" },
+          { accessor: "message" },
         ]}
       />
     </div>
