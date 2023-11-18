@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO log (success, type, message, old_metadata, new_metadata, source_path, target_path) VALUES (?,?,?,?,?,?,?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "2f60fbf2f0cf01eed53ad8ed0837e96879021873bb26198e2ed74bdacf7a47ed"
+}

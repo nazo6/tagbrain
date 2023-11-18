@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO log (success, type, message, source_path, retry_count) VALUES (?,?,?,?,?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "cd4ce87367e19279a6c228215c30a108a4673034e6fb98f1f1276f9c7488f1e9"
+}

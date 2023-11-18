@@ -7,6 +7,7 @@ use tracing::{error, info};
 
 use crate::{
     api::musicbrainz::MusicbrainzClient,
+    config::CONFIG,
     interface::{
         log::LogType,
         metadata::{write_metadata, Metadata},
@@ -78,14 +79,13 @@ async fn fix_job_inner(
     let recording = mb.recording(&recording_id).await?;
     let metadata = response_to_metadata(recording, release)?;
 
-    let new_path = if copy_to_target {
-        let new_path = get_save_path_from_metadata(path, &metadata)?;
-        tokio::fs::create_dir_all(new_path.parent().unwrap()).await?;
-        tokio::fs::copy(path, &new_path).await?;
-        new_path
-    } else {
-        path.to_path_buf()
-    };
+    let new_path = get_save_path_from_metadata(path, &metadata)?;
+    tokio::fs::create_dir_all(new_path.parent().unwrap()).await?;
+    tokio::fs::copy(path, &new_path).await?;
+
+    if !copy_to_target || CONFIG.read().delete_original {
+        tokio::fs::remove_file(path).await?;
+    }
 
     write_metadata(&mut tag, metadata.clone());
     tag.save_to_path(new_path.clone())

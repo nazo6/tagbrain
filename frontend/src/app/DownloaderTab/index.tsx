@@ -79,7 +79,9 @@ function QueueInfo(props: { queueInfo: QueueInfoType }) {
             ["queue length", tasks.length],
             [
               "current job",
-              tasks[0]?.Scan.path,
+              tasks[0]
+                ? "Scan" in tasks[0] ? tasks[0].Scan.path : tasks[0].Fix.path
+                : null,
             ],
           ],
         }}
