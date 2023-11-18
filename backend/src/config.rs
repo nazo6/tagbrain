@@ -71,6 +71,7 @@ pub struct ReleaseSelector {
     pub country: MatchReleaseSelector,
     /// Read metadata from current file and calculate levenshtein distance.
     pub release_title_distance: DistanceReleaseSelector,
+    pub recording_title_distance: DistanceReleaseSelector,
 }
 
 impl Default for ReleaseSelector {
@@ -87,6 +88,10 @@ impl Default for ReleaseSelector {
                 weight: 1.0,
             },
             release_title_distance: DistanceReleaseSelector {
+                threshold: 0.5,
+                weight: 1.0,
+            },
+            recording_title_distance: DistanceReleaseSelector {
                 threshold: 0.5,
                 weight: 1.0,
             },

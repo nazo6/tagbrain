@@ -1,15 +1,18 @@
 import { rspc } from "../../lib/client";
 import { useEffect, useState } from "react";
 import { LogTable } from "./LogTable";
-import { ScanLog } from "../../lib/bindings";
+import { QueueInfo as QueueInfoType, ScanLog } from "../../lib/bindings";
 import { LogView } from "./LogView";
 import { ScanForm } from "./ScanForm";
-import { Table } from "@mantine/core";
+import { Button, Modal, Table } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { QueueModal } from "./QueueModal";
 
 export const perPage = 10;
 
 export function DownloaderTab() {
   const [logPage, setLogPage] = useState(0);
+
   const { data: log } = rspc.useQuery(["scan_log", {
     limit: perPage,
     page: logPage,
@@ -36,19 +39,7 @@ export function DownloaderTab() {
         <div className="grid grid-rows-2 lg:grid-rows-none lg:grid-cols-2 gap-2">
           <ScanForm />
           <div>
-            {queueInfo && (
-              <Table
-                data={{
-                  body: [
-                    ["queue length", queueInfo.queue_count],
-                    [
-                      "current job",
-                      JSON.stringify(queueInfo.current_job, null, 2),
-                    ],
-                  ],
-                }}
-              />
-            )}
+            {queueInfo && <QueueInfo queueInfo={queueInfo} />}
           </div>
         </div>
         <div className="lg:grid lg:grid-cols-5 gap-2">
@@ -71,6 +62,38 @@ export function DownloaderTab() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function QueueInfo(props: { queueInfo: QueueInfoType }) {
+  const [queueInfoOpened, { open: openQueueInfo, close: closeQueueInfo }] =
+    useDisclosure(false);
+  const tasks = props.queueInfo.tasks.slice().reverse();
+  return (
+    <div>
+      <Table
+        className="whitespace-pre-wrap"
+        data={{
+          body: [
+            ["queue length", tasks.length],
+            [
+              "current job",
+              tasks[0]?.Scan.path,
+            ],
+          ],
+        }}
+      />
+      <Button onClick={openQueueInfo}>Queue details</Button>
+
+      <Modal
+        size="auto"
+        opened={queueInfoOpened}
+        onClose={closeQueueInfo}
+        title="Queue Info"
+      >
+        <QueueModal tasks={tasks} />
+      </Modal>
     </div>
   );
 }

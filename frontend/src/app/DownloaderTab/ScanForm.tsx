@@ -11,6 +11,7 @@ export function ScanForm() {
   });
 
   const { mutateAsync: scan } = rspc.useMutation("scan");
+  const { mutateAsync: clearQueue } = rspc.useMutation("queue_clear");
   const { mutateAsync: scanAll } = rspc.useMutation("scan_all");
 
   return (
@@ -40,7 +41,7 @@ export function ScanForm() {
           Scan
         </Button>
       </div>
-      <div className="flex">
+      <div className="flex gap-2">
         <Button
           onClick={async () => {
             try {
@@ -58,6 +59,24 @@ export function ScanForm() {
           }}
         >
           Scan all files
+        </Button>
+        <Button
+          onClick={async () => {
+            try {
+              await clearQueue(undefined);
+              notifications.show({
+                title: "Success",
+                message: "Send request",
+              });
+            } catch (e: any) {
+              notifications.show({
+                title: "Error",
+                message: e.message ?? "Unknown error",
+              });
+            }
+          }}
+        >
+          Clear queue
         </Button>
       </div>
     </div>

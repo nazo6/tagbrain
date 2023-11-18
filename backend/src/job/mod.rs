@@ -12,8 +12,7 @@ mod scan_job;
 
 #[derive(Debug, rspc::Type, serde::Serialize)]
 pub struct QueueInfo {
-    pub queue_count: u32,
-    pub current_job: Option<JobTask>,
+    pub tasks: Vec<JobTask>,
 }
 
 #[derive(Debug)]
@@ -31,7 +30,6 @@ pub enum JobTask {
 
 pub struct Queue {
     pub queue: Mutex<Vec<JobTask>>,
-    pub current_job: Mutex<Option<JobTask>>,
     pub channel: mpsc::UnboundedSender<()>,
 }
 impl Queue {
@@ -40,7 +38,6 @@ impl Queue {
         (
             Self {
                 queue: Mutex::new(vec![]),
-                current_job: Mutex::new(None),
                 channel: channel.0,
             },
             channel.1,
@@ -52,9 +49,7 @@ impl Queue {
         self.channel.send(()).unwrap();
     }
     pub fn dequeue(&self) -> Option<JobTask> {
-        let job = self.queue.lock().unwrap().pop();
-        *self.current_job.lock().unwrap() = job.clone();
-        job
+        self.queue.lock().unwrap().pop()
     }
     pub fn clear(&self) {
         self.queue.lock().unwrap().clear();
@@ -91,8 +86,7 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
                     JobCommand::GetQueueInfo { sender } => {
                         sender
                             .send(QueueInfo {
-                                queue_count: queue.queue.lock().unwrap().len() as u32,
-                                current_job: queue.current_job.lock().unwrap().clone(),
+                                tasks: queue.queue.lock().unwrap().clone(),
                             })
                             .unwrap();
                     }

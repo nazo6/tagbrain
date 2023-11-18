@@ -13,6 +13,9 @@ export function ConfigTab() {
       {config && (
         <>
           <Textarea
+            classNames={{
+              input: "font-mono",
+            }}
             ref={ref}
             defaultValue={config}
             autosize

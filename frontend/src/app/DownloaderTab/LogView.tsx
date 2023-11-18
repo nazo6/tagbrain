@@ -1,4 +1,4 @@
-import { ScanLog } from "../lib/bindings";
+import { ScanLog } from "../../lib/bindings";
 import { Table } from "@mantine/core";
 
 function getRow(log: ScanLog, prop: string) {

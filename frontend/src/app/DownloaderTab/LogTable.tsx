@@ -1,5 +1,5 @@
 import { DataTable } from "mantine-datatable";
-import { ScanLog } from "../lib/bindings";
+import { ScanLog } from "../../lib/bindings";
 import { useState } from "react";
 
 export function LogTable(
