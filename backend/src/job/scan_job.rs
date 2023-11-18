@@ -23,13 +23,16 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                     let new_metadata = serde_json::to_string(&res.new_metadata).unwrap();
                     let source_path = path.to_string_lossy();
                     let target_path = res.target_path.to_string_lossy();
-                    let acoustid_score = match res.scanner_info {
-                        scan_and_copy::ScannerInfo::AcoustId { score } => Some(score),
-                        _ => None,
+                    let (acoustid_score, message) = match res.scanner_info {
+                        scan_and_copy::ScannerInfo::AcoustId { score } => {
+                            (Some(score), "Scanner: AcoustId")
+                        }
+                        _ => (None, "Scanner: MusicBrainz Search"),
                     };
                     let res = query!(
-                        "INSERT INTO log (success, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?)",
+                        "INSERT INTO log (success, message, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?,?)",
                         true,
+                        message,
                         old_metadata,
                         new_metadata,
                         source_path,

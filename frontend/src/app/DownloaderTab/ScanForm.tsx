@@ -1,6 +1,6 @@
 import { Button, TextInput } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { rspc } from "../lib/client";
+import { rspc } from "../../lib/client";
 import { notifications } from "@mantine/notifications";
 
 export function ScanForm() {
@@ -14,7 +14,7 @@ export function ScanForm() {
   const { mutateAsync: scanAll } = rspc.useMutation("scan_all");
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <div className="flex gap-2 items-center">
         <TextInput
           placeholder="Scan path"

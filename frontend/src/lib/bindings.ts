@@ -2,9 +2,12 @@
 
 export type Procedures = {
     queries: 
+        { key: "config_read", input: never, result: string } | 
         { key: "queue_info", input: never, result: QueueInfo } | 
         { key: "scan_log", input: ScanLogRequest, result: [ScanLog[], number] },
     mutations: 
+        { key: "config_write", input: string, result: null } | 
+        { key: "queue_clear", input: never, result: null } | 
         { key: "scan", input: ScanRequest, result: null } | 
         { key: "scan_all", input: never, result: null },
     subscriptions: never

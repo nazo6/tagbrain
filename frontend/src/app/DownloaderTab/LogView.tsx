@@ -48,6 +48,7 @@ export function LogView({ log }: { log: ScanLog }) {
                 ],
                 body: [
                   ["moved to", log.target_path],
+                  ["message", log.message],
                   ["retry times", log.retry_count],
                 ],
               }}

@@ -130,15 +130,11 @@ pub struct ConfigRwLockWriteGuardWrapper<'a> {
 impl Drop for ConfigRwLockWriteGuardWrapper<'_> {
     fn drop(&mut self) {
         let config = toml::to_string_pretty(&*self.config).unwrap();
-        tokio::spawn({
-            async move {
-                let res = tokio::fs::write(&*CONFIG_PATH, config).await;
-                if let Err(e) = res {
-                    error!("Failed to write config file: {}", e);
-                }
-                info!("Config file updated.");
-            }
-        });
+        let res = std::fs::write(&*CONFIG_PATH, config);
+        if let Err(e) = res {
+            error!("Failed to write config file: {}", e);
+        }
+        info!("Config file updated.");
     }
 }
 impl Deref for ConfigRwLockWriteGuardWrapper<'_> {
