@@ -7,10 +7,19 @@ export function QueueModal(
   },
 ) {
   const tasks = props.tasks.map((t, i) => {
-    return {
-      id: i + 1,
-      ...t.Scan,
-    };
+    if ("Scan" in t) {
+      return {
+        id: i + 1,
+        type: "Scan",
+        message: `path:${t.Scan.path}, retry_count:${t.Scan.retry_count}`,
+      };
+    } else {
+      return {
+        id: i + 1,
+        type: "Fix",
+        message: `path:${t.Fix.path}, copy:${t.Fix.copy_to_target}`,
+      };
+    }
   });
   return (
     <div className="flex flex-col gap-2">

@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use config::CONFIG;
+use eyre::DefaultHandler;
 use job::JobCommand;
 use once_cell::sync::Lazy;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -50,6 +51,7 @@ fn install_tracing() {
 }
 
 fn main() -> eyre::Result<()> {
+    eyre::set_hook(Box::new(DefaultHandler::default_with)).unwrap();
     install_tracing();
 
     #[cfg(debug_assertions)]

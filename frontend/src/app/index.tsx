@@ -1,6 +1,7 @@
 import App from "./App.tsx";
 import { createTheme, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
+import { ModalsProvider } from "@mantine/modals";
 import { QueryClient } from "@tanstack/react-query";
 import { createClient, WebsocketTransport } from "@rspc/client";
 import { Procedures } from "../lib/bindings.ts";
@@ -32,8 +33,10 @@ export function AppIndex() {
   return (
     <rspc.Provider client={client} queryClient={queryClient}>
       <MantineProvider theme={theme}>
-        <Notifications />
-        <App />
+        <ModalsProvider>
+          <Notifications />
+          <App />
+        </ModalsProvider>
       </MantineProvider>
     </rspc.Provider>
   );

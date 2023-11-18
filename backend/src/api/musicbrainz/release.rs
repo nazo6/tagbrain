@@ -3,6 +3,7 @@ use super::{ArtistCredit, MusicbrainzClient};
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ReleaseRes {
+    pub id: String,
     pub label_info: Option<Vec<ReleaseResLabelInfo>>,
     pub artist_credit: Option<Vec<ArtistCredit>>,
     pub media: Vec<ReleaseResMedia>,
@@ -10,6 +11,16 @@ pub struct ReleaseRes {
     pub text_representation: Option<ReleaseResTextRepresentation>,
     pub date: Option<String>,
     pub disambiguation: Option<String>,
+    pub release_group: ReleaseResReleaseGroup,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct ReleaseResReleaseGroup {
+    pub id: String,
+    pub title: String,
+    pub primary_type: Option<String>,
+    pub first_release_date: Option<String>,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -62,7 +73,10 @@ impl MusicbrainzClient {
         let url = format!("https://musicbrainz.org/ws/2/release/{}", id);
         let url = url::Url::parse_with_params(
             &url,
-            &[("fmt", "json"), ("inc", "artists+recordings+labels")],
+            &[
+                ("fmt", "json"),
+                ("inc", "artists+recordings+labels+release-groups"),
+            ],
         )?;
         let res: ReleaseRes = self.get(url).await?.json().await?;
         Ok(res)

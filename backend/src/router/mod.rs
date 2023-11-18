@@ -21,6 +21,8 @@ pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
         .mutation("queue_clear", |t| t(handlers::queue_clear::queue_clear))
         .query("config_read", |t| t(handlers::config::config_read))
         .mutation("config_write", |t| t(handlers::config::config_write))
+        .mutation("fix", |t| t(handlers::fix::fix))
+        .mutation("fix_failed", |t| t(handlers::fix::fix_failed))
         .build()
         .arced();
 

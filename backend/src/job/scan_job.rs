@@ -5,6 +5,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     config::CONFIG,
+    interface::log::LogType,
     job::{scan_job::scan_and_copy::scan_and_copy, JobTask},
     POOL,
 };
@@ -30,8 +31,9 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         _ => (None, "Scanner: MusicBrainz Search"),
                     };
                     let res = query!(
-                        "INSERT INTO log (success, message, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?,?)",
+                        "INSERT INTO log (success, type, message, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?,?,?)",
                         true,
+                        LogType::Scan,
                         message,
                         old_metadata,
                         new_metadata,
@@ -56,8 +58,9 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         let err = format!("{:?}", err);
                         let path = path.to_string_lossy();
                         query!(
-                            "INSERT INTO log (success, message, source_path, retry_count) VALUES (?,?,?,?)",
+                            "INSERT INTO log (success, type, message, source_path, retry_count) VALUES (?,?,?,?,?)",
                             false,
+                            LogType::Scan,
                             err,
                             path,
                             retry_count

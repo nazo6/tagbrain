@@ -8,7 +8,9 @@ use tracing::info;
 
 use crate::{config::CONFIG, JobReceiver};
 
+mod fix_job;
 mod scan_job;
+mod utils;
 
 #[derive(Debug, rspc::Type, serde::Serialize)]
 pub struct QueueInfo {
@@ -17,15 +19,39 @@ pub struct QueueInfo {
 
 #[derive(Debug)]
 pub enum JobCommand {
-    Scan { path: PathBuf, retry_count: u8 },
+    Scan {
+        path: PathBuf,
+        retry_count: u8,
+    },
     ScanAll,
     ClearQueue,
-    GetQueueInfo { sender: oneshot::Sender<QueueInfo> },
+    GetQueueInfo {
+        sender: oneshot::Sender<QueueInfo>,
+    },
+    Fix {
+        target_path: PathBuf,
+        release_id: String,
+        recording_id: String,
+    },
+    FixFailed {
+        source_path: PathBuf,
+        release_id: String,
+        recording_id: String,
+    },
 }
 
 #[derive(Debug, Clone, rspc::Type, serde::Serialize)]
 pub enum JobTask {
-    Scan { path: PathBuf, retry_count: u8 },
+    Scan {
+        path: PathBuf,
+        retry_count: u8,
+    },
+    Fix {
+        path: PathBuf,
+        release_id: String,
+        recording_id: String,
+        copy_to_target: bool,
+    },
 }
 
 pub struct Queue {
@@ -90,6 +116,30 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
                             })
                             .unwrap();
                     }
+                    JobCommand::Fix {
+                        target_path,
+                        release_id,
+                        recording_id,
+                    } => {
+                        queue.enqueue(JobTask::Fix {
+                            path: target_path,
+                            release_id,
+                            recording_id,
+                            copy_to_target: false,
+                        });
+                    }
+                    JobCommand::FixFailed {
+                        source_path,
+                        release_id,
+                        recording_id,
+                    } => {
+                        queue.enqueue(JobTask::Fix {
+                            path: source_path,
+                            release_id,
+                            recording_id,
+                            copy_to_target: true,
+                        });
+                    }
                 }
             }
         });
@@ -108,6 +158,17 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
                         tokio::spawn(async move {
                             let _permit = permit;
                             scan_job::scan_job(&path, q2, retry_count).await;
+                        });
+                    }
+                    JobTask::Fix {
+                        path,
+                        release_id,
+                        recording_id,
+                        copy_to_target,
+                    } => {
+                        tokio::spawn(async move {
+                            let _permit = permit;
+                            fix_job::fix_job(&path, release_id, recording_id, copy_to_target).await;
                         });
                     }
                 }

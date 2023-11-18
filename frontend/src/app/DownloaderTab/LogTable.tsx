@@ -1,6 +1,8 @@
 import { DataTable } from "mantine-datatable";
 import { ScanLog } from "../../lib/bindings";
 import { useState } from "react";
+import { Button } from "@mantine/core";
+import { openFixModal } from "./openFixModal";
 
 export function LogTable(
   props: {
@@ -47,6 +49,20 @@ export function LogTable(
             title: "match",
             render: ({ acoustid_score }) =>
               acoustid_score ? Math.round(acoustid_score * 100) + "%" : "-",
+          },
+          {
+            accessor: "fix",
+            render: (log) => {
+              return (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  onClick={() => openFixModal(log)}
+                >
+                  Fix
+                </Button>
+              );
+            },
           },
         ]}
         page={props.page}

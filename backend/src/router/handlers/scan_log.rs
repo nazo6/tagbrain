@@ -1,5 +1,6 @@
 use rspc::Type;
 
+use crate::interface::log::{LogType, ScanLog, ScanLogRaw};
 use crate::interface::metadata::Metadata;
 use crate::POOL;
 
@@ -8,48 +9,6 @@ use super::AppState;
 pub struct ScanLogRequest {
     limit: u32,
     page: u32,
-}
-
-pub struct ScanLogRaw {
-    id: i64,
-    created_at: chrono::NaiveDateTime,
-    success: bool,
-    message: Option<String>,
-    old_metadata: Option<sqlx::types::Json<Metadata>>,
-    new_metadata: Option<sqlx::types::Json<Metadata>>,
-    source_path: String,
-    target_path: Option<String>,
-    acoustid_score: Option<f64>,
-    retry_count: i64,
-}
-#[derive(serde::Serialize, Type)]
-pub struct ScanLog {
-    id: i32,
-    created_at: i32,
-    success: bool,
-    message: Option<String>,
-    old_metadata: Option<Metadata>,
-    new_metadata: Option<Metadata>,
-    source_path: String,
-    target_path: Option<String>,
-    acoustid_score: Option<f32>,
-    retry_count: i32,
-}
-impl From<ScanLogRaw> for ScanLog {
-    fn from(raw: ScanLogRaw) -> Self {
-        Self {
-            id: raw.id as i32,
-            created_at: raw.created_at.timestamp() as i32,
-            success: raw.success,
-            message: raw.message,
-            old_metadata: raw.old_metadata.map(|x| x.0),
-            new_metadata: raw.new_metadata.map(|x| x.0),
-            source_path: raw.source_path,
-            target_path: raw.target_path,
-            acoustid_score: raw.acoustid_score.map(|x| x as f32),
-            retry_count: raw.retry_count as i32,
-        }
-    }
 }
 
 pub async fn scan_log(
@@ -62,6 +21,7 @@ pub async fn scan_log(
         r#"
             SELECT 
                 id as "id: i64",
+                type as "type: LogType",
                 created_at,
                 success,
                 message,

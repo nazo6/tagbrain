@@ -11,28 +11,6 @@ function getRow(log: ScanLog, prop: string) {
   ];
 }
 
-export type Metadata = {
-  title: string | null;
-  artist: string | null;
-  artist_sort: string | null;
-  album: string | null;
-  album_artist: string | null;
-  album_artist_sort: string | null;
-  track: string | null;
-  total_tracks: string | null;
-  disk: string | null;
-  total_disks: string | null;
-  date: string | null;
-  year: string | null;
-  label: string | null;
-  media: string | null;
-  musicbrainz_track_id: string | null;
-  musicbrainz_release_id: string | null;
-  musicbrainz_artist_id: string | null;
-  musicbrainz_release_artist_id: string | null;
-  musicbrainz_release_group_id: string | null;
-};
-
 export function LogView({ log }: { log: ScanLog }) {
   return (
     <div className="flex flex-col">
@@ -47,7 +25,7 @@ export function LogView({ log }: { log: ScanLog }) {
                   "",
                 ],
                 body: [
-                  ["moved to", log.target_path],
+                  ["target", log.target_path],
                   ["message", log.message],
                   ["retry times", log.retry_count],
                 ],
@@ -81,6 +59,7 @@ export function LogView({ log }: { log: ScanLog }) {
                   getRow(log, "musicbrainz_artist_id"),
                   getRow(log, "musicbrainz_release_artist_id"),
                   getRow(log, "musicbrainz_release_group_id"),
+                  getRow(log, "musicbrainz_recording_id"),
                 ],
               }}
             />
