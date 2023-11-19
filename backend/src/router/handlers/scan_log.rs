@@ -5,12 +5,13 @@ use crate::interface::metadata::Metadata;
 use crate::POOL;
 
 use super::AppState;
-#[derive(serde::Deserialize, Type)]
+#[derive(serde::Deserialize, Type, Debug)]
 pub struct ScanLogRequest {
     limit: u32,
     page: u32,
 }
 
+#[tracing::instrument(err, skip(_ctx))]
 pub async fn scan_log(
     _ctx: AppState,
     req: ScanLogRequest,
