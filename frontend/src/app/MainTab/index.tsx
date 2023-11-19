@@ -10,7 +10,7 @@ import { QueueModal } from "./QueueModal";
 
 export const perPage = 10;
 
-export function DownloaderTab() {
+export function MainTab() {
   const [logPage, setLogPage] = useState(0);
 
   const { data: log } = rspc.useQuery(["scan_log", {

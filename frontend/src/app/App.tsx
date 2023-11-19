@@ -1,21 +1,21 @@
 import { Tabs } from "@mantine/core";
-import { DownloaderTab } from "./DownloaderTab";
+import { MainTab } from "./MainTab";
 import { ConfigTab } from "./ConfigTab";
 
 function App() {
   return (
-    <Tabs defaultValue="downloader">
+    <Tabs defaultValue="main">
       <Tabs.List>
-        <Tabs.Tab value="downloader">
-          Downloader
+        <Tabs.Tab value="main">
+          Main
         </Tabs.Tab>
         <Tabs.Tab value="config">
           Config
         </Tabs.Tab>
       </Tabs.List>
 
-      <Tabs.Panel value="downloader">
-        <DownloaderTab />
+      <Tabs.Panel value="main">
+        <MainTab />
       </Tabs.Panel>
 
       <Tabs.Panel value="config">
