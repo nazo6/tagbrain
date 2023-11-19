@@ -102,6 +102,7 @@ pub(super) fn read_tag_or_default(path: &Path) -> eyre::Result<Tag> {
         .unwrap_or_else(|| Tag::new(tagged_file.primary_tag_type()));
     tag.retain(|item| {
         if let lofty::ItemKey::Unknown(key) = item.key() {
+            // lofty doesn't support ASIN tag and if tag has it, lofty throws error.
             if key == "ASIN" {
                 warn!("ASIN tag found. Removing...");
                 return false;
