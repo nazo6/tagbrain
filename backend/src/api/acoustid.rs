@@ -1,5 +1,7 @@
 use crate::config::CONFIG;
 
+use super::deserialize;
+
 pub struct AcoustidClient {
     client: reqwest::Client,
 }
@@ -40,7 +42,8 @@ impl AcoustidClient {
                 ("fingerprint", &fingerprint.to_string()),
             ],
         )?;
-        let res: LookupRes = self.client.get(url).send().await?.json().await?;
+        let text = self.client.get(url).send().await?.text().await?;
+        let res: LookupRes = deserialize(&text)?;
         Ok(res)
     }
 }

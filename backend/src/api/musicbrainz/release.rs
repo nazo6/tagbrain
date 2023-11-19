@@ -1,3 +1,5 @@
+use crate::api::deserialize;
+
 use super::{ArtistCredit, MusicbrainzClient};
 
 #[derive(serde::Deserialize, Debug)]
@@ -48,7 +50,7 @@ pub struct ReleaseResLabelInfoLabel {
 #[serde(rename_all = "kebab-case")]
 pub struct ReleaseResMedia {
     pub position: u32,
-    pub format: String,
+    pub format: Option<String>,
     pub tracks: Vec<ReleaseResMediaTrack>,
     pub track_count: u32,
 }
@@ -78,7 +80,8 @@ impl MusicbrainzClient {
                 ("inc", "artists+recordings+labels+release-groups"),
             ],
         )?;
-        let res: ReleaseRes = self.get(url).await?.json().await?;
+        let text = self.get(url).await?.text().await?;
+        let res: ReleaseRes = deserialize(&text)?;
         Ok(res)
     }
 }

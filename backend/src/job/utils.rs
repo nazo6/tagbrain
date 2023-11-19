@@ -62,7 +62,7 @@ pub(super) fn response_to_metadata(
                 .first()
                 .and_then(|li| li.label.as_ref().map(|label| label.name.clone()))
         }),
-        media: Some(this_media.format.clone()),
+        media: this_media.format.clone(),
         script: release.text_representation.and_then(|tr| tr.script),
         musicbrainz_artist_id: recording
             .artist_credit

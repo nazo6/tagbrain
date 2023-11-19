@@ -1,3 +1,5 @@
+use crate::api::deserialize;
+
 use super::{ArtistCredit, MusicbrainzClient};
 
 #[derive(serde::Deserialize, Debug)]
@@ -54,7 +56,9 @@ impl MusicbrainzClient {
             url,
             &[("fmt", "json"), ("query", query), ("limit", "15")],
         )?;
-        let res: RecordingSearchRes = self.client.get(url).send().await?.json().await?;
+
+        let text = self.get(url).await?.text().await?;
+        let res: RecordingSearchRes = deserialize(&text)?;
         Ok(res)
     }
 }
