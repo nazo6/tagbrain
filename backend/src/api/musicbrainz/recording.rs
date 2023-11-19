@@ -5,7 +5,7 @@ use super::{ArtistCredit, MusicbrainzClient};
 pub struct RecordingRes {
     pub title: String,
     pub id: String,
-    pub releases: Vec<RecordingResRelease>,
+    pub releases: Option<Vec<RecordingResRelease>>,
     pub artist_credit: Option<Vec<ArtistCredit>>,
     pub first_release_date: Option<String>,
 }

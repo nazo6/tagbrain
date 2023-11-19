@@ -69,18 +69,17 @@ pub(super) fn find_best_release_and_recording(
     let best_recording_releases: Vec<(RecordingRes, RecordingResRelease, f64)> = recordings
         .into_iter()
         .map(|recording| {
-            let (best_release, best_score) =
-                recording
-                    .releases
-                    .iter()
-                    .fold((None, -1.0), |(best, best_score), release| {
-                        let score = calc_score(release, &recording, crr_tag, release_selector);
-                        if score > best_score {
-                            (Some(release), score)
-                        } else {
-                            (best, best_score)
-                        }
-                    });
+            let (best_release, best_score) = recording.releases.iter().flatten().fold(
+                (None, -1.0),
+                |(best, best_score), release| {
+                    let score = calc_score(release, &recording, crr_tag, release_selector);
+                    if score > best_score {
+                        (Some(release), score)
+                    } else {
+                        (best, best_score)
+                    }
+                },
+            );
             let best_release = best_release.cloned();
             match best_release {
                 Some(best_release) => Some((recording, best_release, best_score)),

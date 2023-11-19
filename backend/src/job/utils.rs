@@ -7,6 +7,7 @@ use crate::{
 use eyre::{eyre, Context, Result};
 use lofty::{read_from_path, Picture, Tag, TaggedFileExt};
 use sanitize_filename::sanitize;
+use tracing::warn;
 
 /// Collect data, and format it into a metadata struct.
 pub(super) fn response_to_metadata(
@@ -95,10 +96,19 @@ pub(super) async fn fetch_cover_art(release_id: &str) -> eyre::Result<Picture> {
 /// Read tag from file. If file has no tag, return default tag.
 pub(super) fn read_tag_or_default(path: &Path) -> eyre::Result<Tag> {
     let tagged_file = read_from_path(path).wrap_err("Failed to read file")?;
-    let tag = tagged_file
+    let mut tag = tagged_file
         .primary_tag()
         .cloned()
         .unwrap_or_else(|| Tag::new(tagged_file.primary_tag_type()));
+    tag.retain(|item| {
+        if let lofty::ItemKey::Unknown(key) = item.key() {
+            if key == "ASIN" {
+                warn!("ASIN tag found. Removing...");
+                return false;
+            }
+        }
+        true
+    });
     Ok(tag)
 }
 
