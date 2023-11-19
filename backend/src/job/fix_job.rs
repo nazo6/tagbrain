@@ -81,7 +81,8 @@ async fn fix_job_inner(
     let recording = mb.recording(&recording_id).await?;
     let metadata = response_to_metadata(recording, release)?;
 
-    let new_path = get_save_path_from_metadata(path, &metadata)?;
+    let new_path =
+        get_save_path_from_metadata(path, Path::new(&CONFIG.read().target_dir), &metadata)?;
     tokio::fs::create_dir_all(new_path.parent().unwrap()).await?;
     tokio::fs::copy(path, &new_path).await?;
 

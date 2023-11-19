@@ -9,10 +9,10 @@ pub struct Metadata {
     pub album: Option<String>,
     pub album_artist: Option<String>,
     pub album_artist_sort: Option<String>,
-    pub track: Option<String>,
-    pub total_tracks: Option<String>,
-    pub disk: Option<String>,
-    pub total_disks: Option<String>,
+    pub track: Option<u32>,
+    pub total_tracks: Option<u32>,
+    pub disc: Option<u32>,
+    pub total_discs: Option<u32>,
     pub original_date: Option<String>,
     pub date: Option<String>,
     pub year: Option<String>,
@@ -33,6 +33,12 @@ macro_rules! get {
     };
 }
 
+macro_rules! try_get {
+    ($tag:expr, $key:ident) => {
+        $tag.get_string(&ItemKey::$key).and_then(|s| s.parse().ok())
+    };
+}
+
 impl Metadata {
     pub fn from_tag(tag: &Tag) -> Self {
         Self {
@@ -42,10 +48,10 @@ impl Metadata {
             album: get!(tag, AlbumTitle),
             album_artist: get!(tag, AlbumArtist),
             album_artist_sort: get!(tag, AlbumArtistSortOrder),
-            track: get!(tag, TrackNumber),
-            total_tracks: get!(tag, TrackTotal),
-            disk: get!(tag, DiscNumber),
-            total_disks: get!(tag, DiscTotal),
+            track: try_get!(tag, TrackNumber),
+            total_tracks: try_get!(tag, TrackTotal),
+            disc: try_get!(tag, DiscNumber),
+            total_discs: try_get!(tag, DiscTotal),
             original_date: get!(tag, OriginalReleaseDate),
             date: get!(tag, RecordingDate),
             year: get!(tag, Year),
@@ -70,6 +76,17 @@ macro_rules! insert {
     };
 }
 
+macro_rules! insert_to_str {
+    ($tag:expr, $key:ident, $value:expr) => {
+        if let Some(value) = $value {
+            $tag.insert(TagItem::new(
+                ItemKey::$key,
+                ItemValue::Text(value.to_string()),
+            ));
+        }
+    };
+}
+
 #[rustfmt::skip]
 pub fn write_metadata(tag: &mut Tag, metadata: Metadata) {
     insert!(tag, TrackTitle,                 metadata.title);
@@ -78,10 +95,10 @@ pub fn write_metadata(tag: &mut Tag, metadata: Metadata) {
     insert!(tag, AlbumTitle,                 metadata.album);
     insert!(tag, AlbumArtist,                metadata.album_artist);
     insert!(tag, AlbumArtistSortOrder,       metadata.album_artist_sort);
-    insert!(tag, TrackNumber,                metadata.track);
-    insert!(tag, TrackTotal,                 metadata.total_tracks);
-    insert!(tag, DiscNumber,                 metadata.disk);
-    insert!(tag, DiscTotal,                  metadata.total_disks);
+    insert_to_str!(tag, TrackNumber,         metadata.track);
+    insert_to_str!(tag, TrackTotal,          metadata.total_tracks);
+    insert_to_str!(tag, DiscNumber,          metadata.disc);
+    insert_to_str!(tag, DiscTotal,           metadata.total_discs);
     insert!(tag, OriginalReleaseDate,        metadata.original_date);
     insert!(tag, RecordingDate,              metadata.date);
     insert!(tag, Year,                       metadata.year);

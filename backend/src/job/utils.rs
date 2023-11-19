@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     api::musicbrainz::{recording::RecordingRes, release::ReleaseRes, ArtistCreditVecToString},
-    config::CONFIG,
     interface::metadata::Metadata,
 };
 use eyre::{eyre, Context, Result};
@@ -48,10 +47,10 @@ pub(super) fn response_to_metadata(
         }),
         album_artist: release.artist_credit.as_ref().map(|a| a.to_string()),
         album_artist_sort: release.artist_credit.as_ref().map(|a| a.to_sort_string()),
-        track: Some(this_track.position.to_string()),
-        total_tracks: Some(this_media.track_count.to_string()),
-        disk: Some(this_media.position.to_string()),
-        total_disks: Some(release.media.len().to_string()),
+        track: Some(this_track.position),
+        total_tracks: Some(this_media.track_count),
+        disc: Some(this_media.position),
+        total_discs: Some(release.media.len() as u32),
         original_date: release.release_group.first_release_date,
         date: release.date.clone(),
         year: release
@@ -106,6 +105,7 @@ pub(super) fn read_tag_or_default(path: &Path) -> eyre::Result<Tag> {
 /// Determine the save path from metadata and source path (for detecting extension).
 pub(super) fn get_save_path_from_metadata(
     source_path: &Path,
+    target_dir: &Path,
     metadata: &Metadata,
 ) -> eyre::Result<PathBuf> {
     let Some(Some(ext)) = source_path.extension().map(|ext| ext.to_str()) else {
@@ -114,52 +114,114 @@ pub(super) fn get_save_path_from_metadata(
 
     let mut new_path = PathBuf::new();
 
-    let artist = sanitize(
-        metadata
-            .artist
-            .as_ref()
-            .ok_or_else(|| eyre!("artist not found"))?,
-    );
-    let album = sanitize(
-        metadata
-            .album
-            .as_ref()
-            .ok_or_else(|| eyre!("album not found"))?,
-    );
-    let title = sanitize(
-        metadata
-            .title
-            .as_ref()
-            .ok_or_else(|| eyre!("title not found"))?,
-    );
+    let artist = metadata
+        .artist
+        .as_ref()
+        .ok_or_else(|| eyre!("artist not found"))?;
+    let album = metadata
+        .album
+        .as_ref()
+        .ok_or_else(|| eyre!("album not found"))?;
+    let title = metadata
+        .title
+        .as_ref()
+        .ok_or_else(|| eyre!("title not found"))?;
     let album_artist = &metadata.album_artist;
     let track = &metadata.track;
 
-    new_path.push(CONFIG.read().target_dir.clone());
+    new_path.push(target_dir);
     new_path.push(sanitize(album_artist.clone().unwrap_or(artist.clone())));
-    new_path.push(album.clone());
-    let file_name = {
+    new_path.push(sanitize(album.clone()));
+    if let (Some(total_discs), Some(disc)) = (metadata.total_discs, metadata.disc) {
+        if total_discs > 1 {
+            let width = total_discs.to_string().len();
+            let disc = format!("{:0width$}", disc, width = width);
+            new_path.push(sanitize(format!("Disc {}", disc)));
+        }
+    }
+    new_path.push(sanitize({
         let mut file_name = String::new();
         if let Some(track) = track {
-            file_name.push_str(&sanitize(track));
+            let width = metadata.total_tracks.unwrap_or(0).to_string().len();
+            let track = format!("{:0width$}", track, width = width);
+            file_name.push_str(&track);
             file_name.push_str(" - ");
         }
-        file_name.push_str(&title);
+        file_name.push_str(title);
         file_name.push('.');
         file_name.push_str(ext);
         file_name
-    };
-    new_path.push(file_name);
+    }));
     Ok(new_path)
 }
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     #[tokio::test]
     async fn cover_art() {
         let cover_art = super::fetch_cover_art("db85c244-53e7-441c-bab0-52c9c0d27450")
             .await
             .unwrap();
         assert_eq!(cover_art.mime_type().to_string(), "image/jpeg".to_string());
+    }
+
+    #[test]
+    fn save_path_1() {
+        let get_path = |metadata: &super::Metadata| {
+            super::get_save_path_from_metadata(
+                &std::path::PathBuf::from("source_path.mp3"),
+                &PathBuf::from("/target_dir"),
+                metadata,
+            )
+            .unwrap()
+        };
+        let mut metadata = super::Metadata {
+            title: Some("title".to_string()),
+            artist: Some("artist".to_string()),
+            artist_sort: Some("artist_sort".to_string()),
+            album: Some("album".to_string()),
+            album_artist: Some("album_artist".to_string()),
+            album_artist_sort: Some("album_artist_sort".to_string()),
+            track: Some(1),
+            total_tracks: Some(2),
+            disc: Some(1),
+            total_discs: Some(2),
+            original_date: Some("original_date".to_string()),
+            date: Some("date".to_string()),
+            year: Some("year".to_string()),
+            label: Some("label".to_string()),
+            media: Some("media".to_string()),
+            script: Some("script".to_string()),
+            musicbrainz_artist_id: Some("musicbrainz_artist_id".to_string()),
+            musicbrainz_track_id: Some("musicbrainz_track_id".to_string()),
+            musicbrainz_release_id: Some("musicbrainz_release_id".to_string()),
+            musicbrainz_release_artist_id: Some("musicbrainz_release_artist_id".to_string()),
+            musicbrainz_release_group_id: Some("musicbrainz_release_group_id".to_string()),
+            musicbrainz_recording_id: Some("musicbrainz_recording_id".to_string()),
+        };
+        assert_eq!(
+            get_path(&metadata),
+            std::path::PathBuf::from("/target_dir/album_artist/album/Disc 1/1 - title.mp3")
+        );
+
+        metadata.total_tracks = Some(10);
+        assert_eq!(
+            get_path(&metadata),
+            std::path::PathBuf::from("/target_dir/album_artist/album/Disc 1/01 - title.mp3")
+        );
+
+        metadata.total_discs = None;
+        assert_eq!(
+            get_path(&metadata),
+            std::path::PathBuf::from("/target_dir/album_artist/album/01 - title.mp3")
+        );
+
+        metadata.total_discs = Some(10);
+        assert_eq!(
+            get_path(&metadata),
+            std::path::PathBuf::from("/target_dir/album_artist/album/Disc 01/01 - title.mp3")
+        );
     }
 }

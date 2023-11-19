@@ -33,7 +33,8 @@ pub(super) async fn scan_and_copy(path: &Path) -> eyre::Result<ScanSuccessLog> {
         scanner_info,
     } = scan::scan(path).await.wrap_err("Failed to scan")?;
 
-    let new_path = get_save_path_from_metadata(path, &new_metadata)?;
+    let new_path =
+        get_save_path_from_metadata(path, Path::new(&CONFIG.read().target_dir), &new_metadata)?;
 
     save::save_file(path, &new_path, new_tag)
         .await
