@@ -3,6 +3,7 @@
     "dev": "run-p dev:*",
     "dev:backend": "cd backend && cargo watch -x run",
     "dev:frontend": "cd frontend && npm run dev",
+    "sqlx:prepare": "cd backend && cargo sqlx prepare",
     "build": "run-s build:frontend build:backend",
     "build:backend": "cd backend && cargo build --release",
     "build:frontend": "cd frontend && pnpm build"

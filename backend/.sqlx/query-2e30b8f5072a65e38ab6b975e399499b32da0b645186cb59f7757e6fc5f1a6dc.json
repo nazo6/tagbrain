@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT \n                id as \"id: i64\",\n                type as \"type: LogType\",\n                created_at,\n                success,\n                message,\n                old_metadata as \"old_metadata?: sqlx::types::Json<Metadata>\",\n                new_metadata as \"new_metadata?: sqlx::types::Json<Metadata>\",\n                source_path,\n                target_path,\n                acoustid_score,\n                retry_count\n            FROM log ORDER BY id DESC LIMIT ? OFFSET ?",
+  "query": "\n            SELECT \n                id as \"id: i64\",\n                type as \"type: LogType\",\n                created_at,\n                success,\n                message,\n                old_metadata as \"old_metadata?: sqlx::types::Json<Metadata>\",\n                new_metadata as \"new_metadata?: sqlx::types::Json<Metadata>\",\n                source_path,\n                target_path,\n                acoustid_score,\n                retry_count\n            FROM log\n            WHERE success = COALESCE(?, success)\n            ORDER BY id DESC \n            LIMIT ? \n            OFFSET ?",
   "describe": {
     "columns": [
       {
@@ -60,7 +60,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
       false,
@@ -76,5 +76,5 @@
       true
     ]
   },
-  "hash": "f8be18d9d703f77ebeb441ddd41f8055bbf48aa3246cc08c1d4baac1134406e9"
+  "hash": "2e30b8f5072a65e38ab6b975e399499b32da0b645186cb59f7757e6fc5f1a6dc"
 }
