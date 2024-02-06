@@ -9,6 +9,7 @@ use super::AppState;
 pub struct ScanLogRequest {
     limit: u32,
     page: u32,
+    success: Option<bool>,
 }
 
 #[tracing::instrument(err, skip(_ctx))]
@@ -32,7 +33,12 @@ pub async fn scan_log(
                 target_path,
                 acoustid_score,
                 retry_count
-            FROM log ORDER BY id DESC LIMIT ? OFFSET ?"#,
+            FROM log
+            WHERE success = COALESCE(?, success)
+            ORDER BY id DESC 
+            LIMIT ? 
+            OFFSET ?"#,
+        req.success,
         req.limit,
         offset
     )

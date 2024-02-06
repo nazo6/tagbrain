@@ -4,7 +4,7 @@ import { LogTable } from "./LogTable";
 import { QueueInfo as QueueInfoType, ScanLog } from "../../lib/bindings";
 import { LogView } from "./LogView";
 import { ScanForm } from "./ScanForm";
-import { Button, Modal, Table } from "@mantine/core";
+import { Button, Checkbox, Modal, Table } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { QueueModal } from "./QueueModal";
 
@@ -12,10 +12,12 @@ export const perPage = 10;
 
 export function MainTab() {
   const [logPage, setLogPage] = useState(0);
+  const [failedOnly, setFailedOnly] = useState(false);
 
   const { data: log } = rspc.useQuery(["scan_log", {
     limit: perPage,
     page: logPage,
+    success: failedOnly ? false : null,
   }], {
     refetchInterval: () => {
       if (logPage == 0) return 2000;
@@ -44,16 +46,22 @@ export function MainTab() {
         </div>
         <div className="lg:grid lg:grid-cols-5 gap-2">
           {log && (
-            <LogTable
-              className="lg:col-span-3 whitespace-nowrap"
-              data={log[0]}
-              changePage={(page) => setLogPage(page - 1)}
-              page={logPage + 1}
-              maxPage={Math.ceil(log[1] / perPage)}
-              onRowClick={(row) => setLogToShow(row)}
-              totalRecords={log[1]}
-              recordsPerPage={perPage}
-            />
+            <div className="flex flex-col lg:col-span-3 whitespace-nowrap gap-2">
+              <Checkbox
+                label="Failed only"
+                checked={failedOnly}
+                onChange={(e) => setFailedOnly(e.currentTarget.checked)}
+              />
+              <LogTable
+                data={log[0]}
+                changePage={(page) => setLogPage(page - 1)}
+                page={logPage + 1}
+                maxPage={Math.ceil(log[1] / perPage)}
+                onRowClick={(row) => setLogToShow(row)}
+                totalRecords={log[1]}
+                recordsPerPage={perPage}
+              />
+            </div>
           )}
           {logToShow && (
             <div className="lg:col-span-2">

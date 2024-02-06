@@ -3,10 +3,13 @@ use lofty::{Accessor, Tag};
 
 use crate::{api::musicbrainz::MusicbrainzClient, job::scan_job::scan_and_copy::ScannerInfo};
 
-use super::ScannerRes;
+use super::{FpcalcResult, ScannerRes};
 
 #[tracing::instrument(skip(crr_tag))]
-pub(super) async fn musicbrainz_search_scanner(crr_tag: &Tag) -> Result<ScannerRes, eyre::Report> {
+pub(super) async fn musicbrainz_search_scanner(
+    crr_tag: &Tag,
+    fp: &FpcalcResult,
+) -> Result<ScannerRes, eyre::Report> {
     let mb_client = MusicbrainzClient::new();
 
     let title = crr_tag.title().ok_or_else(|| eyre!("No title tag"))?;

@@ -1,11 +1,15 @@
 use std::path::Path;
 
-use eyre::eyre;
+use eyre::{eyre, Context};
 use lofty::Tag;
+use serde::Deserialize;
 use tracing::{info, warn};
 
 use crate::{
-    api::musicbrainz::{recording::RecordingRes, MusicbrainzClient},
+    api::{
+        acoustid::AcoustidClient,
+        musicbrainz::{recording::RecordingRes, MusicbrainzClient},
+    },
     interface::metadata::{write_metadata, Metadata},
     job::{
         scan_job::scan_and_copy::utils::find_best_release_and_recording,
@@ -29,16 +33,41 @@ struct ScannerRes {
     recordings: Vec<RecordingRes>,
 }
 
-#[tracing::instrument]
+#[derive(Deserialize, Debug)]
+pub(super) struct FpcalcResult {
+    pub duration: f64,
+    pub fingerprint: String,
+}
+async fn calc_fingerprint(path: &Path) -> eyre::Result<FpcalcResult> {
+    let output = tokio::process::Command::new("fpcalc")
+        .arg(path)
+        .arg("-json")
+        .output()
+        .await
+        .wrap_err("Failed to run fpcalc")?;
+    let str = String::from_utf8(output.stdout)?;
+    let json: FpcalcResult = serde_json::from_str(&str)?;
+
+    Ok(json)
+}
+
 pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
     let mut tag = read_tag_or_default(path)?;
 
-    let scanner_res = if let Ok(res) = acoustid_scanner::acoustid_scanner(path).await {
-        res
-    } else {
-        info!("Acoustid scanner failed. Falling back to musicbrainz search scanner.");
-        musicbrainz_search_scanner::musicbrainz_search_scanner(&tag).await?
-    };
+    let fp = calc_fingerprint(path)
+        .await
+        .wrap_err("Failed to calc fingerprint")?;
+
+    let (scanner_res, submit_fingerprint) =
+        if let Ok(res) = acoustid_scanner::acoustid_scanner(path, &fp).await {
+            (res, false)
+        } else {
+            info!("Acoustid scanner failed. Falling back to musicbrainz search scanner.");
+            (
+                musicbrainz_search_scanner::musicbrainz_search_scanner(&tag, &fp).await?,
+                true,
+            )
+        };
 
     let (best_recording, best_release, best_score) = {
         find_best_release_and_recording(scanner_res.recordings, &tag)
@@ -56,6 +85,18 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
         best_recording.id,
         best_score
     );
+
+    if submit_fingerprint {
+        let acoustid_client = AcoustidClient::new();
+        let _ = acoustid_client
+            .submit(
+                &best_recording.id,
+                &fp.fingerprint,
+                fp.duration.round() as u32,
+            )
+            .await;
+        info!("Submitted fingerprint to acoustid: {}", best_recording.id);
+    }
 
     let old_metadata = Metadata::from_tag(&tag);
 

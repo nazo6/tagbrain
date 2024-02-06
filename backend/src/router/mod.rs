@@ -17,6 +17,9 @@ pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
         .mutation("scan", |t| t(handlers::scan::scan))
         .mutation("scan_all", |t| t(handlers::scan_all::scan_all))
         .query("scan_log", |t| t(handlers::scan_log::scan_log))
+        .query("scan_log_clear", |t| {
+            t(handlers::scan_log_clear::scan_log_clear)
+        })
         .query("queue_info", |t| t(handlers::queue_info::queue_info))
         .mutation("queue_clear", |t| t(handlers::queue_clear::queue_clear))
         .query("config_read", |t| t(handlers::config::config_read))

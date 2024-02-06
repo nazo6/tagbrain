@@ -10,34 +10,18 @@ use crate::{
     job::scan_job::scan_and_copy::{scan::ScannerRes, ScannerInfo},
 };
 
-#[derive(Deserialize, Debug)]
-pub(super) struct FpcalcResult {
-    pub duration: f64,
-    pub fingerprint: String,
-}
-async fn calc_fingerprint(path: &Path) -> eyre::Result<FpcalcResult> {
-    let output = tokio::process::Command::new("fpcalc")
-        .arg(path)
-        .arg("-json")
-        .output()
-        .await
-        .wrap_err("Failed to run fpcalc")?;
-    let str = String::from_utf8(output.stdout)?;
-    let json: FpcalcResult = serde_json::from_str(&str)?;
-
-    Ok(json)
-}
+use super::FpcalcResult;
 
 #[tracing::instrument]
-pub(super) async fn acoustid_scanner(path: &Path) -> Result<ScannerRes, eyre::Report> {
+pub(super) async fn acoustid_scanner(
+    path: &Path,
+    fp: &FpcalcResult,
+) -> Result<ScannerRes, eyre::Report> {
     info!("Scanning file: {}", path.display());
-    let calculated = calc_fingerprint(path)
-        .await
-        .wrap_err("Failed to calc fingerprint")?;
 
     let acoustid_client = AcoustidClient::new();
     let acoustid_res = acoustid_client
-        .lookup(&calculated.fingerprint, calculated.duration.round() as u32)
+        .lookup(&fp.fingerprint, fp.duration.round() as u32)
         .await?;
     let Some(best) = acoustid_res
         .results
