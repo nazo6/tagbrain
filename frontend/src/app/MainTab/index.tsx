@@ -7,6 +7,7 @@ import { ScanForm } from "./ScanForm";
 import { Button, Checkbox, Modal, Table } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { QueueModal } from "./QueueModal";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const perPage = 10;
 
@@ -22,6 +23,12 @@ export function MainTab() {
     refetchInterval: () => {
       if (logPage == 0) return 2000;
       return false;
+    },
+  });
+  const queryClient = useQueryClient();
+  const { mutateAsync: clearLog } = rspc.useMutation(["scan_log_clear"], {
+    onSuccess: () => {
+      queryClient.invalidateQueries(["scan_log"]);
     },
   });
 
@@ -44,14 +51,33 @@ export function MainTab() {
             {queueInfo && <QueueInfo queueInfo={queueInfo} />}
           </div>
         </div>
-        <div className="lg:grid lg:grid-cols-5 gap-2">
+        <div className="lg:grid lg:grid-cols-5 gap-2 bg-gray-50 p-3 rounded-md">
           {log && (
             <div className="flex flex-col lg:col-span-3 whitespace-nowrap gap-2">
-              <Checkbox
-                label="Failed only"
-                checked={failedOnly}
-                onChange={(e) => setFailedOnly(e.currentTarget.checked)}
-              />
+              <div className="flex gap-2">
+                <Checkbox
+                  className="mr-auto"
+                  label="Failed only"
+                  checked={failedOnly}
+                  onChange={(e) => setFailedOnly(e.currentTarget.checked)}
+                />
+                <Button
+                  size="xs"
+                  onClick={async () => {
+                    await clearLog({ clear_failed: false });
+                  }}
+                >
+                  Clear succeed
+                </Button>
+                <Button
+                  size="xs"
+                  onClick={async () => {
+                    await clearLog({ clear_failed: true });
+                  }}
+                >
+                  Clear all logs
+                </Button>
+              </div>
               <LogTable
                 data={log[0]}
                 changePage={(page) => setLogPage(page - 1)}
@@ -84,6 +110,7 @@ function QueueInfo(props: { queueInfo: QueueInfoType }) {
         className="whitespace-pre-wrap"
         data={{
           body: [
+            ["running job count", props.queueInfo.running_count],
             ["queue length", tasks.length],
             [
               "current job",

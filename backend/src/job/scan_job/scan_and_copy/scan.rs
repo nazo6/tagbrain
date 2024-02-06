@@ -64,7 +64,7 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
         } else {
             info!("Acoustid scanner failed. Falling back to musicbrainz search scanner.");
             (
-                musicbrainz_search_scanner::musicbrainz_search_scanner(&tag, &fp).await?,
+                musicbrainz_search_scanner::musicbrainz_search_scanner(&tag).await?,
                 true,
             )
         };

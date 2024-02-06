@@ -1,7 +1,6 @@
 use std::path::Path;
 
-use eyre::{eyre, Context, Result};
-use serde::Deserialize;
+use eyre::{eyre, Result};
 use tracing::{debug, info, warn};
 
 use crate::{
@@ -12,7 +11,7 @@ use crate::{
 
 use super::FpcalcResult;
 
-#[tracing::instrument]
+#[tracing::instrument(skip(fp))]
 pub(super) async fn acoustid_scanner(
     path: &Path,
     fp: &FpcalcResult,

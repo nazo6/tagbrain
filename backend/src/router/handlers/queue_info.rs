@@ -1,6 +1,12 @@
-use crate::job::QueueInfo;
+use crate::job::JobTask;
 
 use super::AppState;
+
+#[derive(Debug, rspc::Type, serde::Serialize)]
+pub struct QueueInfo {
+    pub tasks: Vec<JobTask>,
+    pub running_count: u32,
+}
 
 pub async fn queue_info(ctx: AppState, _: ()) -> Result<QueueInfo, rspc::Error> {
     let (tx, rx) = tokio::sync::oneshot::channel();
@@ -21,5 +27,8 @@ pub async fn queue_info(ctx: AppState, _: ()) -> Result<QueueInfo, rspc::Error> 
             ),
         )
     })?;
-    Ok(info)
+    Ok(QueueInfo {
+        tasks: info.tasks,
+        running_count: info.running_count as u32,
+    })
 }

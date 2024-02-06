@@ -13,7 +13,7 @@ pub async fn scan_log_clear(_ctx: AppState, req: ScanLogClearRequest) -> Result<
     sqlx::query!(
         r#"
             DELETE FROM log
-            WHERE success = CASE WHEN ? THEN true ELSE success END"#,
+            WHERE success = CASE WHEN ? THEN success ELSE true END"#,
         req.clear_failed
     )
     .execute(&*POOL)

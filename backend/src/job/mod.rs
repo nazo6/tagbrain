@@ -12,9 +12,10 @@ mod fix_job;
 mod scan_job;
 mod utils;
 
-#[derive(Debug, rspc::Type, serde::Serialize)]
+#[derive(Debug)]
 pub struct QueueInfo {
     pub tasks: Vec<JobTask>,
+    pub running_count: usize,
 }
 
 #[derive(Debug)]
@@ -87,8 +88,11 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
     let (queue, mut receiver) = Queue::new();
     let queue = Arc::new(queue);
 
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
+
     {
         let queue = queue.clone();
+        let semaphore = semaphore.clone();
         tokio::spawn(async move {
             while let Some(job) = job_receiver.recv().await {
                 match job {
@@ -113,6 +117,7 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
                         sender
                             .send(QueueInfo {
                                 tasks: queue.queue.lock().unwrap().clone(),
+                                running_count: 1 - semaphore.available_permits(),
                             })
                             .unwrap();
                     }
@@ -144,8 +149,6 @@ pub async fn start_job(mut job_receiver: JobReceiver) {
             }
         });
     }
-
-    let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
 
     loop {
         if receiver.recv().await.is_some() {
