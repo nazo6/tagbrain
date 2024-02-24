@@ -22,6 +22,7 @@ pub struct ScanSuccessLog {
 pub(crate) enum ScannerInfo {
     AcoustId { score: f64 },
     MusicbrainzSearch,
+    Skip,
 }
 
 #[tracing::instrument]

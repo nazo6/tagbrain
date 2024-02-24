@@ -96,7 +96,20 @@ pub(super) fn find_best_release_and_recording(
         .into_iter()
         .flatten()
         .collect::<Vec<_>>();
-    best_recording_releases
+    let best_recording = best_recording_releases
         .into_iter()
-        .max_by(|a, b| a.2.partial_cmp(&b.2).expect("This should not happen."))
+        .max_by(|a, b| a.2.partial_cmp(&b.2).expect("This should not happen."));
+    if let Some((recording, release, score)) = best_recording {
+        if score < CONFIG.read().release_selector.threshold {
+            warn!(
+                "Best release score was lower than threshold. Score: {}",
+                score
+            );
+            None
+        } else {
+            Some((recording, release, score))
+        }
+    } else {
+        None
+    }
 }

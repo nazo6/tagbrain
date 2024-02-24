@@ -28,7 +28,10 @@ pub async fn scan_job(path: &Path, queue: Arc<crate::job::Queue>, retry_count: u
                         scan_and_copy::ScannerInfo::AcoustId { score } => {
                             (Some(score), "Scanner: AcoustId")
                         }
-                        _ => (None, "Scanner: MusicBrainz Search"),
+                        scan_and_copy::ScannerInfo::MusicbrainzSearch => {
+                            (None, "Scanner: MusicBrainz Search")
+                        }
+                        scan_and_copy::ScannerInfo::Skip => (None, "Scanner: Skip"),
                     };
                     let res = query!(
                         "INSERT INTO log (success, type, message, old_metadata, new_metadata, source_path, target_path, acoustid_score, retry_count) VALUES (?,?,?,?,?,?,?,?,?)",

@@ -20,6 +20,7 @@ pub struct Config {
     pub allowed_extensions: Vec<String>,
     pub delete_original: bool,
     pub overwrite: bool,
+    pub force: bool,
 }
 
 impl Default for Config {
@@ -52,6 +53,7 @@ impl Default for Config {
             ],
             delete_original: false,
             overwrite: false,
+            force: true,
         }
     }
 }
@@ -72,6 +74,7 @@ pub struct ReleaseSelector {
     /// Read metadata from current file and calculate levenshtein distance.
     pub release_title_distance: DistanceReleaseSelector,
     pub recording_title_distance: DistanceReleaseSelector,
+    pub threshold: f64,
 }
 
 impl Default for ReleaseSelector {
@@ -95,6 +98,7 @@ impl Default for ReleaseSelector {
                 threshold: 0.5,
                 weight: 1.0,
             },
+            threshold: 1.0,
         }
     }
 }

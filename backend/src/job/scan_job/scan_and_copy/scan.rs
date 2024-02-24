@@ -10,6 +10,7 @@ use crate::{
         acoustid::AcoustidClient,
         musicbrainz::{recording::RecordingRes, MusicbrainzClient},
     },
+    config::CONFIG,
     interface::metadata::{write_metadata, Metadata},
     job::{
         scan_job::scan_and_copy::utils::find_best_release_and_recording,
@@ -54,9 +55,23 @@ async fn calc_fingerprint(path: &Path) -> eyre::Result<FpcalcResult> {
 pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
     let mut tag = read_tag_or_default(path)?;
 
+    let old_metadata = Metadata::from_tag(&tag);
+
     let fp = calc_fingerprint(path)
         .await
         .wrap_err("Failed to calc fingerprint")?;
+
+    if old_metadata.musicbrainz_release_id.is_some()
+        && old_metadata.musicbrainz_recording_id.is_some()
+        && CONFIG.read().force
+    {
+        return Ok(ScanRes {
+            old_metadata: old_metadata.clone(),
+            new_metadata: old_metadata,
+            new_tag: tag,
+            scanner_info: ScannerInfo::Skip,
+        });
+    }
 
     let (scanner_res, submit_fingerprint) =
         if let Ok(res) = acoustid_scanner::acoustid_scanner(path, &fp).await {
@@ -97,8 +112,6 @@ pub(super) async fn scan(path: &Path) -> eyre::Result<ScanRes> {
             .await;
         info!("Submitted fingerprint to acoustid: {}", best_recording.id);
     }
-
-    let old_metadata = Metadata::from_tag(&tag);
 
     if tag.picture_count() == 0 {
         let cover_art = fetch_cover_art(&release.id).await;
