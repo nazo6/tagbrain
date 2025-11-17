@@ -5,7 +5,7 @@ use crate::{
     interface::metadata::Metadata,
 };
 use eyre::{eyre, Context, Result};
-use lofty::{read_from_path, Picture, Tag, TaggedFileExt};
+use lofty::{file::TaggedFileExt as _, picture::Picture, read_from_path, tag::Tag};
 use sanitize_filename::sanitize;
 use tracing::warn;
 
@@ -101,7 +101,7 @@ pub(super) fn read_tag_or_default(path: &Path) -> eyre::Result<Tag> {
         .cloned()
         .unwrap_or_else(|| Tag::new(tagged_file.primary_tag_type()));
     tag.retain(|item| {
-        if let lofty::ItemKey::Unknown(key) = item.key() {
+        if let lofty::tag::ItemKey::Unknown(key) = item.key() {
             // lofty doesn't support ASIN tag and if tag has it, lofty throws error.
             if key == "ASIN" {
                 warn!("ASIN tag found. Removing...");
@@ -175,7 +175,10 @@ mod test {
         let cover_art = super::fetch_cover_art("db85c244-53e7-441c-bab0-52c9c0d27450")
             .await
             .unwrap();
-        assert_eq!(cover_art.mime_type().to_string(), "image/jpeg".to_string());
+        assert_eq!(
+            cover_art.mime_type().map(|s| s.to_string()),
+            Some("image/jpeg".to_string())
+        );
     }
 
     #[test]

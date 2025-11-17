@@ -1,5 +1,5 @@
 use eyre::eyre;
-use lofty::{Accessor, Tag};
+use lofty::tag::{Accessor, Tag};
 
 use crate::{api::musicbrainz::MusicbrainzClient, job::scan_job::scan_and_copy::ScannerInfo};
 

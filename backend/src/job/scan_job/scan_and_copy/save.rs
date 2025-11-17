@@ -1,5 +1,8 @@
 use eyre::{eyre, Context};
-use lofty::{Tag, TagExt};
+use lofty::{
+    config::WriteOptions,
+    tag::{Tag, TagExt},
+};
 use std::path::Path;
 
 use crate::config::CONFIG;
@@ -19,7 +22,7 @@ pub(super) async fn save_file(
     tokio::fs::copy(source_path, &target_path).await?;
 
     new_tag
-        .save_to_path(target_path)
+        .save_to_path(target_path, WriteOptions::new())
         .wrap_err("Failed to write tag")?;
 
     Ok(())

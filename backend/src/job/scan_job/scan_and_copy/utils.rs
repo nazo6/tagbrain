@@ -1,4 +1,4 @@
-use lofty::{Accessor, Tag};
+use lofty::tag::{Accessor, Tag};
 use tracing::warn;
 
 use crate::{

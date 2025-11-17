@@ -50,5 +50,8 @@ pub async fn scan_log(_ctx: AppState, req: ScanLogRequest) -> Result<(Vec<ScanLo
         .map_err(|e| Error::Internal(format!("Failed to query db: {:?}", e)))?
         .count;
 
-    Ok((res.into_iter().map(|x| x.into()).collect(), total_items))
+    Ok((
+        res.into_iter().map(|x| x.into()).collect(),
+        total_items.try_into().unwrap(),
+    ))
 }

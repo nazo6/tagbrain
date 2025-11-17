@@ -1,4 +1,4 @@
-use lofty::{ItemKey, ItemValue, Tag, TagItem};
+use lofty::tag::{ItemKey, ItemValue, Tag, TagItem};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, specta::Type)]

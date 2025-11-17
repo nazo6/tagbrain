@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use eyre::{eyre, Context};
-use lofty::Tag;
+use lofty::tag::Tag;
 use serde::Deserialize;
 use tracing::{info, warn};
 

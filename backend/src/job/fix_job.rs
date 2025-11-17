@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use eyre::Context;
-use lofty::TagExt;
+use lofty::{config::WriteOptions, prelude::TagExt};
 use sqlx::query;
 use tracing::{error, info, warn};
 
@@ -100,7 +100,7 @@ async fn fix_job_inner(
     }
 
     write_metadata(&mut tag, metadata.clone());
-    tag.save_to_path(new_path.clone())
+    tag.save_to_path(new_path.clone(), WriteOptions::new())
         .wrap_err("Failed to write tag")?;
 
     let old_metadata = Metadata::from_tag(&tag);
