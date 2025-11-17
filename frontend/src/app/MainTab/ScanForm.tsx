@@ -19,7 +19,7 @@ export function ScanForm() {
       <div className="flex gap-2 items-center">
         <TextInput
           placeholder="Scan path"
-          className="flex-grow"
+          className="grow"
           {...form.getInputProps("scanPath")}
         />
         <Button
