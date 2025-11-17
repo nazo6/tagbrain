@@ -40,7 +40,7 @@ impl From<ScanLogRaw> for ScanLog {
         Self {
             id: raw.id as i32,
             r#type: raw.r#type,
-            created_at: raw.created_at.timestamp() as i32,
+            created_at: raw.created_at.and_utc().timestamp() as i32,
             success: raw.success,
             message: raw.message,
             old_metadata: raw.old_metadata.map(|x| x.0),

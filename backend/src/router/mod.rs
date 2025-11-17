@@ -15,9 +15,6 @@ use crate::{
 mod frontend;
 mod handlers;
 
-#[derive(Clone)]
-pub struct Ctx {}
-
 #[derive(Debug, thiserror::Error, serde::Serialize, specta::Type)]
 #[serde(tag = "type", content = "error")]
 pub enum Error {

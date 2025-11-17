@@ -39,7 +39,7 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
         match res {
             Ok(event) => {
                 if let EventKind::Access(AccessKind::Close(_)) | EventKind::Create(_) = event.kind {
-                    if let Some(path) = event.paths.get(0) {
+                    if let Some(path) = event.paths.first() {
                         let path = path.to_path_buf();
                         let job_sender = job_sender.clone();
                         tokio::spawn(async move {
@@ -65,7 +65,7 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
                     event.kind
                 {
                     // this occurs when a file is moved
-                    if let Some(path) = event.paths.get(0) {
+                    if let Some(path) = event.paths.first() {
                         let path = path.to_path_buf();
                         let paths = if path.is_dir() {
                             walkdir::WalkDir::new(source_dir)
@@ -101,7 +101,7 @@ pub async fn start_watcher(job_sender: JobSender) -> notify::Result<()> {
                         })
                     }
                 } else if let EventKind::Modify(_) = event.kind {
-                    if let Some(path) = event.paths.get(0) {
+                    if let Some(path) = event.paths.first() {
                         file_last_modified
                             .lock()
                             .unwrap()

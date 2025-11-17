@@ -123,7 +123,7 @@ pub struct ConfigWrapper {
 }
 
 impl ConfigWrapper {
-    pub fn read(&self) -> std::sync::RwLockReadGuard<Config> {
+    pub fn read(&self) -> std::sync::RwLockReadGuard<'_, Config> {
         self.config.read().unwrap()
     }
     pub fn write(&self) -> ConfigRwLockWriteGuardWrapper<'_> {
