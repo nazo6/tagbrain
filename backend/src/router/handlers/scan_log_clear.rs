@@ -1,6 +1,6 @@
 use specta::Type;
 
-use crate::POOL;
+use crate::{router::Error, POOL};
 
 use super::AppState;
 #[derive(serde::Deserialize, Type, Debug)]
@@ -9,7 +9,7 @@ pub struct ScanLogClearRequest {
 }
 
 #[tracing::instrument(err, skip(_ctx))]
-pub async fn scan_log_clear(_ctx: AppState, req: ScanLogClearRequest) -> Result<(), rspc::Error> {
+pub async fn scan_log_clear(_ctx: AppState, req: ScanLogClearRequest) -> Result<(), Error> {
     sqlx::query!(
         r#"
             DELETE FROM log
@@ -18,12 +18,7 @@ pub async fn scan_log_clear(_ctx: AppState, req: ScanLogClearRequest) -> Result<
     )
     .execute(&*POOL)
     .await
-    .map_err(|e| {
-        rspc::Error::new(
-            rspc::ErrorCode::InternalServerError,
-            format!("Failed to delete logs: {:?}", e),
-        )
-    })?;
+    .map_err(|e| Error::Internal(format!("Failed to delete logs: {:?}", e)))?;
 
     Ok(())
 }

@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
-use specta::Type;
 use serde::Deserialize;
+use specta::Type;
+
+use crate::router::Error;
 
 use super::AppState;
 
@@ -11,7 +13,7 @@ pub struct FixRequest {
     pub release_id: String,
     pub recording_id: String,
 }
-pub async fn fix(ctx: AppState, req: FixRequest) -> Result<(), rspc::Error> {
+pub async fn fix(ctx: AppState, req: FixRequest) -> Result<(), Error> {
     ctx.job_sender
         .send(crate::JobCommand::Fix {
             target_path: PathBuf::from(req.target_path),
@@ -19,10 +21,10 @@ pub async fn fix(ctx: AppState, req: FixRequest) -> Result<(), rspc::Error> {
             recording_id: req.recording_id,
         })
         .map_err(|e| {
-            rspc::Error::new(
-                rspc::ErrorCode::InternalServerError,
-                format!("Internal server error: failed to send job command: {}", e,),
-            )
+            Error::Internal(format!(
+                "Internal server error: failed to send job command: {}",
+                e,
+            ))
         })?;
     Ok(())
 }
@@ -33,7 +35,7 @@ pub struct FixFailedRequest {
     pub release_id: String,
     pub recording_id: String,
 }
-pub async fn fix_failed(ctx: AppState, req: FixFailedRequest) -> Result<(), rspc::Error> {
+pub async fn fix_failed(ctx: AppState, req: FixFailedRequest) -> Result<(), Error> {
     ctx.job_sender
         .send(crate::JobCommand::FixFailed {
             source_path: PathBuf::from(req.source_path),
@@ -41,10 +43,10 @@ pub async fn fix_failed(ctx: AppState, req: FixFailedRequest) -> Result<(), rspc
             recording_id: req.recording_id,
         })
         .map_err(|e| {
-            rspc::Error::new(
-                rspc::ErrorCode::InternalServerError,
-                format!("Internal server error: failed to send job command: {}", e,),
-            )
+            Error::Internal(format!(
+                "Internal server error: failed to send job command: {}",
+                e,
+            ))
         })?;
     Ok(())
 }

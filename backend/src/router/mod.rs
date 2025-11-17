@@ -1,14 +1,15 @@
 use std::{
-    marker::PhantomData,
     net::{Ipv4Addr, SocketAddr},
     sync::Arc,
 };
 
-use axum::http::request::Parts;
-use rspc::{Procedure, ProcedureBuilder, ResolverInput, ResolverOutput};
+use rspc::Procedure;
 use tracing::info;
 
-use crate::{router::handlers::AppState, JobSender};
+use crate::{
+    router::handlers::{AppState, AppStateInner},
+    JobSender,
+};
 
 #[cfg(not(debug_assertions))]
 mod frontend;
@@ -24,7 +25,7 @@ pub enum Error {
     BadRequest(String),
     #[error("Internal error: {0}")]
     Internal(String),
-    #[error("internal error: {0}")]
+    #[error("Unexpected error: {0}")]
     #[serde(skip)]
     Any(#[from] eyre::Error),
 }
@@ -40,38 +41,43 @@ impl rspc::Error for Error {
     }
 }
 
-pub struct BaseProcedure<TErr = Error>(PhantomData<TErr>);
-impl<TErr> BaseProcedure<TErr> {
-    pub fn builder<TInput, TResult>(
-    ) -> ProcedureBuilder<TErr, Ctx, Ctx, TInput, TInput, TResult, TResult>
-    where
-        TErr: rspc::Error,
-        TInput: ResolverInput,
-        TResult: ResolverOutput<TErr>,
-    {
-        Procedure::builder()
-    }
-}
-
 #[tracing::instrument(skip(job_sender))]
 pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
-    let router = rspc::Router::<Arc<AppState>>::new()
+    let router = rspc::Router::<AppState>::new()
+        .procedure("scan", Procedure::builder().mutation(handlers::scan::scan))
         .procedure(
-            "scan",
-            Procedure::builder().mutation(|ctx: Arc<AppState>, req| handlers::scan::scan(ctx, req)),
+            "scan_all",
+            Procedure::builder().mutation(handlers::scan_all::scan_all),
         )
-        // .mutation("scan_all", |t| t(handlers::scan_all::scan_all))
-        // .query("scan_log", |t| t(handlers::scan_log::scan_log))
-        // .mutation("scan_log_clear", |t| {
-        //     t(handlers::scan_log_clear::scan_log_clear)
-        // })
-        // .query("queue_info", |t| t(handlers::queue_info::queue_info))
-        // .mutation("queue_clear", |t| t(handlers::queue_clear::queue_clear))
-        // .query("config_read", |t| t(handlers::config::config_read))
-        // .mutation("config_write", |t| t(handlers::config::config_write))
-        // .mutation("fix", |t| t(handlers::fix::fix))
-        // .mutation("fix_failed", |t| t(handlers::fix::fix_failed))
-        ;
+        .procedure(
+            "scan_log",
+            Procedure::builder().query(handlers::scan_log::scan_log),
+        )
+        .procedure(
+            "scan_log_clear",
+            Procedure::builder().mutation(handlers::scan_log_clear::scan_log_clear),
+        )
+        .procedure(
+            "queue_info",
+            Procedure::builder().query(handlers::queue_info::queue_info),
+        )
+        .procedure(
+            "queue_clear",
+            Procedure::builder().mutation(handlers::queue_clear::queue_clear),
+        )
+        .procedure(
+            "config_read",
+            Procedure::builder().query(handlers::config::config_read),
+        )
+        .procedure(
+            "config_write",
+            Procedure::builder().mutation(handlers::config::config_write),
+        )
+        .procedure("fix", Procedure::builder().mutation(handlers::fix::fix))
+        .procedure(
+            "fix_failed",
+            Procedure::builder().mutation(handlers::fix::fix_failed),
+        );
     let (procedures, types) = router.build().unwrap();
 
     #[cfg(debug_assertions)]
@@ -83,11 +89,11 @@ pub async fn start_server(job_sender: JobSender) -> eyre::Result<()> {
         )
         .unwrap();
 
-    let app_state = Arc::new(AppState { job_sender });
+    let app_state = Arc::new(AppStateInner { job_sender });
 
     let app: axum::Router<()> = axum::Router::new().nest(
         "/rspc",
-        rspc_axum::endpoint(procedures, move |parts: Parts| app_state.clone()),
+        rspc_axum::endpoint(procedures, move || app_state.clone()),
     );
 
     #[cfg(not(debug_assertions))]

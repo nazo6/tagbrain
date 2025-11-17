@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
 
 use specta::Type;
 
@@ -10,7 +10,7 @@ use super::AppState;
 pub struct ScanRequest {
     path: String,
 }
-pub async fn scan(ctx: Arc<AppState>, req: ScanRequest) -> Result<(), Error> {
+pub async fn scan(ctx: AppState, req: ScanRequest) -> Result<(), Error> {
     ctx.job_sender
         .send(crate::JobCommand::Scan {
             path: std::path::PathBuf::from_str(&req.path)
