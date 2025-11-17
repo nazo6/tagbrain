@@ -41,7 +41,7 @@ pub enum JobCommand {
     },
 }
 
-#[derive(Debug, Clone, rspc::Type, serde::Serialize)]
+#[derive(Debug, Clone, specta::Type, serde::Serialize)]
 pub enum JobTask {
     Scan {
         path: PathBuf,

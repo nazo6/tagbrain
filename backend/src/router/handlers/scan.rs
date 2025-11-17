@@ -1,6 +1,8 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
-use rspc::Type;
+use specta::Type;
+
+use crate::router::Error;
 
 use super::AppState;
 
@@ -8,16 +10,13 @@ use super::AppState;
 pub struct ScanRequest {
     path: String,
 }
-pub async fn scan(ctx: AppState, req: ScanRequest) -> Result<(), rspc::Error> {
+pub async fn scan(ctx: Arc<AppState>, req: ScanRequest) -> Result<(), Error> {
     ctx.job_sender
         .send(crate::JobCommand::Scan {
-            path: std::path::PathBuf::from_str(&req.path).map_err(|e| {
-                rspc::Error::new(rspc::ErrorCode::BadRequest, format!("Invalid path: {}", e))
-            })?,
+            path: std::path::PathBuf::from_str(&req.path)
+                .map_err(|e| Error::BadRequest(format!("Invalid path: {}", e)))?,
             retry_count: 0,
         })
-        .map_err(|e| {
-            rspc::Error::new(rspc::ErrorCode::BadRequest, format!("Invalid path: {}", e))
-        })?;
+        .map_err(|e| Error::Internal(format!("Failed to send scan job: {}", e)))?;
     Ok(())
 }

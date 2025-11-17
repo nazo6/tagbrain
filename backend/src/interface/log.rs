@@ -1,6 +1,6 @@
 use super::metadata::Metadata;
 
-#[derive(sqlx::Type, rspc::Type, serde::Serialize)]
+#[derive(sqlx::Type, specta::Type, serde::Serialize)]
 #[repr(i32)]
 pub enum LogType {
     Scan = 0,
@@ -21,7 +21,7 @@ pub struct ScanLogRaw {
     pub retry_count: Option<i64>,
 }
 
-#[derive(serde::Serialize, rspc::Type)]
+#[derive(serde::Serialize, specta::Type)]
 pub struct ScanLog {
     pub id: i32,
     pub r#type: LogType,

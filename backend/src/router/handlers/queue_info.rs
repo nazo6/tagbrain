@@ -2,7 +2,7 @@ use crate::job::JobTask;
 
 use super::AppState;
 
-#[derive(Debug, rspc::Type, serde::Serialize)]
+#[derive(Debug, specta::Type, serde::Serialize)]
 pub struct QueueInfo {
     pub tasks: Vec<JobTask>,
     pub running_count: u32,

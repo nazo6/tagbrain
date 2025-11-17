@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use rspc::Type;
+use specta::Type;
 use serde::Deserialize;
 
 use super::AppState;
