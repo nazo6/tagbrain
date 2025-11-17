@@ -1,7 +1,7 @@
 import { rspc } from "../../lib/client";
 import { useEffect, useState } from "react";
 import { LogTable } from "./LogTable";
-import { QueueInfo as QueueInfoType, ScanLog } from "../../lib/bindings";
+import { Procedures, ScanLog } from "../../lib/bindings";
 import { LogView } from "./LogView";
 import { ScanForm } from "./ScanForm";
 import { Button, Checkbox, Modal, Table } from "@mantine/core";
@@ -15,24 +15,30 @@ export function MainTab() {
   const [logPage, setLogPage] = useState(0);
   const [failedOnly, setFailedOnly] = useState(false);
 
-  const { data: log } = rspc.useQuery(["scan_log", {
-    limit: perPage,
-    page: logPage,
-    success: failedOnly ? false : null,
-  }], {
-    refetchInterval: () => {
-      if (logPage == 0) return 2000;
-      return false;
+  const { data: log } = rspc.useQuery(
+    [
+      "scan_log",
+      {
+        limit: perPage,
+        page: logPage,
+        success: failedOnly ? false : null,
+      },
+    ],
+    {
+      refetchInterval: () => {
+        if (logPage == 0) return 2000;
+        return false;
+      },
     },
-  });
+  );
   const queryClient = useQueryClient();
-  const { mutateAsync: clearLog } = rspc.useMutation(["scan_log_clear"], {
+  const { mutateAsync: clearLog } = rspc.useMutation("scan_log_clear", {
     onSuccess: () => {
-      queryClient.invalidateQueries(["scan_log"]);
+      queryClient.invalidateQueries({ queryKey: ["scan_log"] });
     },
   });
 
-  const { data: queueInfo } = rspc.useQuery(["queue_info"], {
+  const { data: queueInfo } = rspc.useQuery(["queue_info", null], {
     refetchInterval: 3000,
   });
   useEffect(() => {
@@ -42,14 +48,10 @@ export function MainTab() {
   return (
     <div className="flex justify-center p-3 h-full">
       <div className="w-full flex flex-col gap-2">
-        <h1 className="text-2xl">
-          Tagbrain
-        </h1>
+        <h1 className="text-2xl">Tagbrain</h1>
         <div className="grid grid-rows-2 lg:grid-rows-none lg:grid-cols-2 gap-2">
           <ScanForm />
-          <div>
-            {queueInfo && <QueueInfo queueInfo={queueInfo} />}
-          </div>
+          <div>{queueInfo && <QueueInfo queueInfo={queueInfo} />}</div>
         </div>
         <div className="lg:grid lg:grid-cols-5 gap-2 bg-gray-50 p-3 rounded-md">
           {log && (
@@ -100,6 +102,7 @@ export function MainTab() {
   );
 }
 
+type QueueInfoType = Procedures["queue_info"]["output"];
 function QueueInfo(props: { queueInfo: QueueInfoType }) {
   const [queueInfoOpened, { open: openQueueInfo, close: closeQueueInfo }] =
     useDisclosure(false);
@@ -115,7 +118,9 @@ function QueueInfo(props: { queueInfo: QueueInfoType }) {
             [
               "current job",
               tasks[0]
-                ? "Scan" in tasks[0] ? tasks[0].Scan.path : tasks[0].Fix.path
+                ? "Scan" in tasks[0]
+                  ? tasks[0].Scan.path
+                  : tasks[0].Fix.path
                 : null,
             ],
           ],

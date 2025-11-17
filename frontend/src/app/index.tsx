@@ -4,7 +4,7 @@ import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
 import { QueryClient } from "@tanstack/react-query";
 import { createClient, WebsocketTransport } from "@rspc/client";
-import { Procedures } from "../lib/bindings.ts";
+import { ProceduresLegacy as Procedures } from "../lib/bindings.ts";
 import { rspc } from "../lib/client.ts";
 
 import "@mantine/core/styles.css";

@@ -45,7 +45,7 @@ export function ScanForm() {
         <Button
           onClick={async () => {
             try {
-              await scanAll(undefined);
+              await scanAll(null);
               notifications.show({
                 title: "Success",
                 message: "Send request",
@@ -63,7 +63,7 @@ export function ScanForm() {
         <Button
           onClick={async () => {
             try {
-              await clearQueue(undefined);
+              await clearQueue(null);
               notifications.show({
                 title: "Success",
                 message: "Send request",

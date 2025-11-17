@@ -4,8 +4,8 @@ import { rspc } from "../lib/client";
 import { useRef } from "react";
 
 export function ConfigTab() {
-  const { data: config } = rspc.useQuery(["config_read"]);
-  const { mutateAsync: writeConfig } = rspc.useMutation(["config_write"]);
+  const { data: config } = rspc.useQuery(["config_read", null]);
+  const { mutateAsync: writeConfig } = rspc.useMutation("config_write");
   const ref = useRef<HTMLTextAreaElement>(null);
 
   return (
