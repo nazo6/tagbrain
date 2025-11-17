@@ -1,7 +1,7 @@
 version: "3"
 services:
   app:
-    image: ${IMAGE}
+    image: ${IMAGE:-ghcr.io/nazo6/tagbrain}
     build: .
     ports:
       - 3090:3080

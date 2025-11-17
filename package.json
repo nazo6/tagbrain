@@ -6,7 +6,9 @@
     "sqlx:prepare": "cd backend && cargo sqlx prepare",
     "build": "run-s build:frontend build:backend",
     "build:backend": "cd backend && cargo build --release",
-    "build:frontend": "cd frontend && pnpm build"
+    "build:frontend": "cd frontend && pnpm build",
+    "docker-build": "pnpm build:frontend && cd backend && cargo zigbuild --target x86_64-unknown-linux-musl --release && cd .. && docker compose build",
+    "docker-release": "pnpm docker-build && docker compose push"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5"
