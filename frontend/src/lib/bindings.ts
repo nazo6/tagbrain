@@ -2,8 +2,25 @@
 
 export type Error = { type: "BadRequest"; error: string } | { type: "Internal"; error: string }
 
-export type ProceduresLegacy = { queries: never; mutations: { key: "scan"; input: { path: string }; result: null }; subscriptions: never }
+export type JobTask = { Scan: { path: string; retry_count: number } } | { Fix: { path: string; release_id: string; recording_id: string; copy_to_target: boolean } }
+
+export type LogType = "Scan" | "Fix"
+
+export type Metadata = { title: string | null; artist: string | null; artist_sort: string | null; album: string | null; album_artist: string | null; album_artist_sort: string | null; track: number | null; total_tracks: number | null; disc: number | null; total_discs: number | null; original_date: string | null; date: string | null; year: string | null; label: string | null; media: string | null; script: string | null; musicbrainz_track_id: string | null; musicbrainz_recording_id: string | null; musicbrainz_artist_id: string | null; musicbrainz_release_id: string | null; musicbrainz_release_artist_id: string | null; musicbrainz_release_group_id: string | null }
+
+export type ProceduresLegacy = { queries: { key: "config_read"; input: null; result: string } | { key: "queue_info"; input: null; result: { tasks: JobTask[]; running_count: number } } | { key: "scan_log"; input: { limit: number; page: number; success: boolean | null }; result: [ScanLog[], number] }; mutations: { key: "config_write"; input: string; result: null } | { key: "fix"; input: { target_path: string; release_id: string; recording_id: string }; result: null } | { key: "fix_failed"; input: { source_path: string; release_id: string; recording_id: string }; result: null } | { key: "queue_clear"; input: null; result: null } | { key: "scan"; input: { path: string }; result: null } | { key: "scan_all"; input: null; result: null } | { key: "scan_log_clear"; input: { clear_failed: boolean }; result: null }; subscriptions: never }
+
+export type ScanLog = { id: number; type: LogType; created_at: number; success: boolean; message: string | null; old_metadata: Metadata | null; new_metadata: Metadata | null; source_path: string; target_path: string | null; acoustid_score: number | null; retry_count: number | null }
 
 export type Procedures = {
+	config_read: { kind: "query", input: null, output: string, error: Error },
+	config_write: { kind: "mutation", input: string, output: null, error: Error },
+	fix: { kind: "mutation", input: { target_path: string; release_id: string; recording_id: string }, output: null, error: Error },
+	fix_failed: { kind: "mutation", input: { source_path: string; release_id: string; recording_id: string }, output: null, error: Error },
+	queue_clear: { kind: "mutation", input: null, output: null, error: Error },
+	queue_info: { kind: "query", input: null, output: { tasks: JobTask[]; running_count: number }, error: Error },
 	scan: { kind: "mutation", input: { path: string }, output: null, error: Error },
+	scan_all: { kind: "mutation", input: null, output: null, error: Error },
+	scan_log: { kind: "query", input: { limit: number; page: number; success: boolean | null }, output: [ScanLog[], number], error: Error },
+	scan_log_clear: { kind: "mutation", input: { clear_failed: boolean }, output: null, error: Error },
 }

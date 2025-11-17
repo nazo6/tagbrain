@@ -1,6 +1,8 @@
 use serde::de::DeserializeOwned;
 
+#[allow(dead_code)]
 pub mod acoustid;
+#[allow(dead_code)]
 pub mod musicbrainz;
 
 fn deserialize<T: DeserializeOwned>(

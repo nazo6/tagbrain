@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 axum = "0.8.7"
-rspc = { git = "https://github.com/specta-rs/rspc", version = "0.4.1", features = [
-  "typescript",
-] }
+rspc = { version = "0.4.1", features = ["typescript"] }
+rspc-axum = { version = "0.3.0", features = ["ws"] }
+specta = "2.0.0-rc.22"
 tower-http = { version = "0.6.6", features = ["cors"] }
 
 reqwest = { version = "0.12.24", features = [
+  "charset",
   "json",
   "rustls-tls",
   "http2",
@@ -51,8 +52,11 @@ walkdir = "2.4.0"
 rust-embed = "8.0.0"
 mime_guess = "2.0.4"
 sanitize-filename = "0.6.0"
-rspc-axum = { git = "https://github.com/specta-rs/rspc", version = "0.3.0", features = [
-  "ws",
-] }
-specta = "2.0.0-rc.22"
 thiserror = "2.0.17"
+
+[patch.crates-io]
+# rspc = { git = "https://github.com/specta-rs/rspc" }
+# rspc-axum = { git = "https://github.com/specta-rs/rspc" }
+
+rspc = { git = "https://github.com/nazo6/rspc", branch = "axum-08-fix" }
+rspc-axum = { git = "https://github.com/nazo6/rspc", branch = "axum-08-fix" }
